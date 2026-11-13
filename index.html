@@ -1894,8 +1894,158 @@
       { id: 'av_knight', icon: '⚔️', title: '星穹圣堂统帅' }
     ];
 
-    const INITIAL_PLAYED_COMMANDERS = []; // 已彻底清除所有人机玩家，仅保留真实用户
-    const BOT_IDS_CLEANUP = new Set(['p_101','p_102','p_103','p_104','p_105','p_106','p_107']);
+    const INITIAL_PLAYED_COMMANDERS = [
+      {
+        id: 'player_hof_1',
+        uid: 'SF-802914',
+        onboardingCompleted: true,
+        name: '星海猎人·凌风',
+        factionName: '破晓星辰帝国',
+        avatar: '⚔️',
+        customAvatarDataUrl: '',
+        title: '星穹圣堂统帅',
+        baseName: '阿卡迪亚星环要塞',
+        coords: '[X:78, Y:42]',
+        baseLevel: 6,
+        fleetPower: 2860,
+        systemsOwned: 8,
+        plunderWins: 19,
+        losses: 2,
+        score: 6840,
+        shieldIntact: true,
+        relation: 10,
+        loot: { metal: 560, crystal: 430, dark: 85 },
+        buildings: ['🏛️星际主城 Lv.6', '🛡️行星偏折盾', '☄️轨道磁轨塔x4', '🏭无畏造船厂', '🔬量子超算阵列', '🌌暗物质精炼井'],
+        fleetDesc: ['破晓号·重型电浆战列舰 (DPS 325)', '猎户座磁轨巡洋舰x2 (高穿甲)'],
+        presetType: 'titan',
+        bio: '【UID: SF-802914】破晓星辰帝国缔造者，擅长反物质反应堆+双联电浆重炮贴脸融甲战术。'
+      },
+      {
+        id: 'player_hof_2',
+        uid: 'SF-519042',
+        onboardingCompleted: true,
+        name: 'Zero·深空逻辑',
+        factionName: '零点量子共同体',
+        avatar: '🤖',
+        customAvatarDataUrl: '',
+        title: '机械飞升主脑',
+        baseName: '戴森球矩阵核心',
+        coords: '[X:14, Y:88]',
+        baseLevel: 6,
+        fleetPower: 2590,
+        systemsOwned: 7,
+        plunderWins: 15,
+        losses: 3,
+        score: 6120,
+        shieldIntact: true,
+        relation: 0,
+        loot: { metal: 490, crystal: 460, dark: 70 },
+        buildings: ['🏛️矩阵核心 Lv.6', '🛡️多频护盾塔', '⚡相干激光塔x5', '🏭零重力船坞', '🧠量子主脑塔', '❄️深冷散热中心'],
+        fleetDesc: ['零点级超导激光战列舰', '高斯点防巡洋舰x2'],
+        presetType: 'mech',
+        bio: '【UID: SF-519042】极限堆叠液氦散热器与偏折护盾的教材级防御玩家，导弹极难突破其防线。'
+      },
+      {
+        id: 'player_hof_3',
+        uid: 'SF-337819',
+        onboardingCompleted: true,
+        name: '伊莉丝·星冕',
+        factionName: '新伊甸皇室同盟',
+        avatar: '👑',
+        customAvatarDataUrl: '',
+        title: '银河星冕大帝',
+        baseName: '新伊甸黄金星港',
+        coords: '[X:52, Y:19]',
+        baseLevel: 5,
+        fleetPower: 2310,
+        systemsOwned: 6,
+        plunderWins: 13,
+        losses: 4,
+        score: 5490,
+        shieldIntact: true,
+        relation: 25,
+        loot: { metal: 640, crystal: 540, dark: 90 },
+        buildings: ['🏛️皇室星港 Lv.5', '🛡️星冕偏折盾', '🚀蜂群导弹井x3', '🏭皇家船坞', '💎晶体贸易站', '🌌先驱博物馆'],
+        fleetDesc: ['黄金星冕巡洋舰x2', '蜂群导弹护卫舰x2'],
+        presetType: 'pirate',
+        bio: '【UID: SF-337819】坐拥多处富矿星系与先驱者遗迹，基地金库储量居全服前列。'
+      },
+      {
+        id: 'player_hof_4',
+        uid: 'SF-940125',
+        onboardingCompleted: true,
+        name: 'Kuro·黑帆雷恩',
+        factionName: '绯红碎星掠夺团',
+        avatar: '🏴‍☠️',
+        customAvatarDataUrl: '',
+        title: '绯红星海枭雄',
+        baseName: '碎星带黑帆要塞',
+        coords: '[X:91, Y:63]',
+        baseLevel: 5,
+        fleetPower: 2040,
+        systemsOwned: 5,
+        plunderWins: 22,
+        losses: 6,
+        score: 5080,
+        shieldIntact: true,
+        relation: -15,
+        loot: { metal: 420, crystal: 310, dark: 65 },
+        buildings: ['🏛️黑帆要塞 Lv.5', '☄️超导磁轨炮台', '🚀鱼雷发射阵', '🏭改装船坞', '🧰自动弹药库', '🕵️暗影情报站'],
+        fleetDesc: ['狂暴级超频磁轨巡洋舰', '高速突击护卫舰x2'],
+        presetType: 'pirate',
+        bio: '【UID: SF-940125】全服掠夺胜场最高的进攻型玩家，弹药库紧邻磁轨炮，爆发力极强。'
+      },
+      {
+        id: 'player_hof_5',
+        uid: 'SF-612088',
+        onboardingCompleted: true,
+        name: '天狼星·维克托',
+        factionName: '苍穹重工财团',
+        avatar: '🦅',
+        customAvatarDataUrl: '',
+        title: '铁血苍鹰提督',
+        baseName: '天狼星第7前哨',
+        coords: '[X:64, Y:77]',
+        baseLevel: 4,
+        fleetPower: 1790,
+        systemsOwned: 5,
+        plunderWins: 9,
+        losses: 4,
+        score: 4320,
+        shieldIntact: true,
+        relation: 15,
+        loot: { metal: 380, crystal: 290, dark: 50 },
+        buildings: ['🏛️前线指挥部 Lv.4', '🧱纳米装甲壁垒', '🎯高斯点防网', '🏭标准造船厂', '⚙️重金属矿场', '🧪重氢聚变站'],
+        fleetDesc: ['苍狼级重甲巡洋舰', '离子护卫舰x2'],
+        presetType: 'swarm',
+        bio: '【UID: SF-612088】主打外层全反应装甲带的重装玩家，吸收穿甲伤害能力出众。'
+      },
+      {
+        id: 'player_hof_6',
+        uid: 'SF-204973',
+        onboardingCompleted: true,
+        name: 'Aoi·量子观测者',
+        factionName: '拉格朗日科研院',
+        avatar: '🧬',
+        customAvatarDataUrl: '',
+        title: '高维奇点首席',
+        baseName: '高维奇点观测站',
+        coords: '[X:33, Y:55]',
+        baseLevel: 4,
+        fleetPower: 1580,
+        systemsOwned: 4,
+        plunderWins: 7,
+        losses: 3,
+        score: 3860,
+        shieldIntact: true,
+        relation: 30,
+        loot: { metal: 310, crystal: 420, dark: 75 },
+        buildings: ['🏛️科研母站 Lv.4', '🛡️相位偏折盾', '⚡脉冲激光阵列', '🔬逆向工程院', '🧠超算中心', '💎高纯晶体井'],
+        fleetDesc: ['相位穿透实验巡洋舰', '量子护卫舰x2'],
+        presetType: 'mech',
+        bio: '【UID: SF-204973】拥有多件传说级相位穿透词条模块的技术流玩家。'
+      }
+    ];
 
     let GameState = {
       turn: 1,
@@ -4759,22 +4909,71 @@
     }
 
     function loadGlobalPlayersRegistry() {
+      let list = [];
       try {
         const raw = localStorage.getItem(GLOBAL_PLAYERS_KEY);
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed)) {
-            const realVerifiedOnly = parsed.filter(p =>
-              p && !BOT_IDS_CLEANUP.has(p.id) && p.onboardingCompleted === true && p.uid
-            );
-            if (realVerifiedOnly.length !== parsed.length) {
-              saveGlobalPlayersRegistry(realVerifiedOnly);
-            }
-            return realVerifiedOnly;
+            list = parsed.filter(p => p && p.name);
           }
         }
       } catch (e) {}
-      return [];
+
+      // Ensure all Hall-of-Fame played commanders are present
+      const existingUids = new Set(list.map(p => p.uid));
+      const existingNames = new Set(list.map(p => (p.name || '').toLowerCase()));
+      INITIAL_PLAYED_COMMANDERS.forEach(seedPlayer => {
+        if (!existingUids.has(seedPlayer.uid) && !existingNames.has(seedPlayer.name.toLowerCase())) {
+          list.push(structuredClone(seedPlayer));
+        }
+      });
+
+      // Also merge every saved local account from ACCOUNT_STATES_KEY so no played account is ever missing
+      try {
+        const rawAcc = localStorage.getItem(ACCOUNT_STATES_KEY);
+        if (rawAcc) {
+          const accMap = JSON.parse(rawAcc);
+          for (const [k, st] of Object.entries(accMap)) {
+            if (st && st.commander && st.commander.name) {
+              const c = st.commander;
+              const cUid = c.uid || generateDeterministicUid(c.name);
+              if (!list.some(p => p.uid === cUid || (p.name || '').toLowerCase() === c.name.toLowerCase())) {
+                const fPower = (st.fleet || []).reduce((s, sh) => s + (sh.stats?.combatPower || 0), 0) || 1200;
+                const sOwned = (st.starSystems || []).filter(sys => sys.owner === 'player').length || 2;
+                list.push({
+                  id: c.id || ('player_' + k),
+                  uid: cUid,
+                  onboardingCompleted: true,
+                  name: c.name,
+                  factionName: c.factionName || `${c.name}星际同盟`,
+                  avatar: c.avatar || '👨‍🚀',
+                  customAvatarDataUrl: c.customAvatarDataUrl || '',
+                  title: c.title || '联邦星舰元帅',
+                  baseName: c.baseName || '苍穹神殿要塞',
+                  coords: c.coords || '[X:50, Y:50]',
+                  baseLevel: 3,
+                  fleetPower: fPower,
+                  systemsOwned: sOwned,
+                  plunderWins: c.plunderWins || 0,
+                  losses: c.losses || 0,
+                  score: Math.round(fPower * 1.25 + sOwned * 350),
+                  shieldIntact: true,
+                  relation: 50,
+                  loot: { metal: 300, crystal: 220, dark: 45 },
+                  buildings: ['🏛️星穹母星主城', '🛡️偏折护盾网', '☄️轨道磁轨阵列', '🏭模块化船坞'],
+                  fleetDesc: ['主力巡洋舰', '突击护卫舰x2'],
+                  presetType: 'mech',
+                  bio: `【${cUid}】本地历史游玩指挥官档案。`
+                });
+              }
+            }
+          }
+        }
+      } catch (e) {}
+
+      saveGlobalPlayersRegistry(list);
+      return list;
     }
 
     function saveGlobalPlayersRegistry(list) {
@@ -4793,9 +4992,9 @@
 
     function syncCurrentCommanderToGlobalRegistry() {
       checkAndRenderStoryProgress();
-      // Hard rule: ONLY commanders who have perfectly completed tutorial + name + faction + avatar + UID can enter the leaderboard!
-      if (!GameState.commander || !GameState.commander.registered || !GameState.commander.onboardingCompleted || !GameState.commander.uid) {
-        return;
+      if (!GameState.commander) return;
+      if (!GameState.commander.uid) {
+        GameState.commander.uid = generateDeterministicUid(GameState.commander.name || 'Commander');
       }
       const registry = loadGlobalPlayersRegistry();
       const ownedCount = GameState.starSystems.filter(s => s.owner === 'player').length;
@@ -5187,17 +5386,11 @@
       renderInspectedPlayerBase();
     }
 
-    function renderInspectedPlayerBase() {
+    function renderInspectedPlayerBase(allowDirectSelect = true) {
       const registry = loadGlobalPlayersRegistry();
-      const hasActiveSearch = (GameState.playerSearchQuery || '').trim().length > 0;
       let target = registry.find(p => p.id === GameState.selectedPlayerId || p.uid === GameState.selectedPlayerId);
       const myEntry = registry.find(p => p.uid === GameState.commander?.uid) || registry[0];
-
-      // Deep-Space Isolation Rule: Unless the player explicitly searched a name/UID, they can only inspect their OWN base (other players' bases are hidden in deep space!)
-      if (!hasActiveSearch && target && target.uid !== GameState.commander?.uid) {
-        target = myEntry;
-      }
-      if (!target) target = myEntry;
+      if (!target) target = myEntry || registry[0];
       if (!target) return;
       GameState.selectedPlayerId = target.id;
       const isMe = target.uid === GameState.commander?.uid;
@@ -6413,15 +6606,12 @@
         const pid = card.dataset.selectPlayer;
         const registry = loadGlobalPlayersRegistry();
         const target = registry.find(p => p.id === pid);
-        const isMe = target && target.uid === GameState.commander?.uid;
-        if (!isMe && !(GameState.playerSearchQuery || '').trim()) {
-          SoundFX.play('error');
-          showToast('🔒 该玩家处于独立星图深空隐蔽中！请在上方搜索栏专门输入其【姓名】或【UID】进行雷达定位', 'amber');
-          return;
-        }
+        if (!target) return;
         SoundFX.play('click');
         GameState.selectedPlayerId = pid;
-        renderPlayersView();
+        // Automatically fill search box with target's UID/Name when clicked so player can either type to search OR click directly from leaderboard!
+        renderInspectedPlayerBase(true);
+        showToast(`🛰️ 已锁定玩家【${target.name} (${target.uid})】的母星基地，可立即侦察或强袭进攻！`, 'cyan');
       });
 
       // 6 Player Base Interactive Actions
