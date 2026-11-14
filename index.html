@@ -7,7 +7,7 @@
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg-deep: #050914;
@@ -21,26 +21,40 @@
     }
     * {
       box-sizing: border-box;
-      user-select: none;
       -webkit-overflow-scrolling: touch;
+    }
+    canvas, button, .nav-btn {
+      user-select: none;
+    }
+    input, textarea, select {
+      user-select: text;
+      -webkit-user-select: text;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .float-text, .shake-hit, .animate-pulse, .animate-ping, .crisis-pulse {
+        animation: none !important;
+        transition: none !important;
+      }
     }
     html, body {
       margin: 0;
       padding: 0;
       background-color: var(--bg-deep);
       color: #e2e8f0;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: 'Inter', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      font-size: 13px;
       overflow-x: hidden;
       overflow-y: auto;
       touch-action: pan-y;
     }
     .mono {
-      font-family: 'JetBrains Mono', monospace;
+      font-family: 'Inter', 'Noto Sans SC', 'JetBrains Mono', sans-serif;
+      font-variant-numeric: tabular-nums;
     }
     .cyber-panel {
-      background: linear-gradient(145deg, rgba(13, 23, 46, 0.97), rgba(8, 14, 30, 0.99));
-      border: 1px solid rgba(0, 240, 255, 0.30);
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      background: #0d1424;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.38);
     }
     .cyber-panel-amber {
       background: linear-gradient(145deg, rgba(24, 18, 10, 0.95), rgba(14, 11, 6, 0.98));
@@ -158,6 +172,36 @@
     }
     .crisis-pulse {
       animation: pulse-glow 1.8s infinite ease-in-out;
+    }
+    .float-text {
+      position: fixed;
+      font-weight: 800;
+      pointer-events: none;
+      z-index: 9999;
+      animation: floatUpFade 0.95s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      text-shadow: 0 0 8px rgba(0,0,0,0.85), 0 0 10px currentColor;
+    }
+    @keyframes floatUpFade {
+      0% { transform: translate(-50%, 0) scale(0.85); opacity: 1; }
+      25% { transform: translate(-50%, -14px) scale(1.12); opacity: 1; }
+      100% { transform: translate(-50%, -52px) scale(0.95); opacity: 0; }
+    }
+    .fly-res-particle {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9998;
+      font-size: 16px;
+      transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.65s ease;
+    }
+    @keyframes screenShake {
+      0%, 100% { transform: translate(0, 0); }
+      20% { transform: translate(-4px, 3px); }
+      40% { transform: translate(4px, -3px); }
+      60% { transform: translate(-3px, -2px); }
+      80% { transform: translate(3px, 2px); }
+    }
+    .shake-hit {
+      animation: screenShake 0.28s ease-in-out;
     }
   </style>
 </head>
@@ -296,6 +340,19 @@
           <span>📬 邮箱</span>
           <span id="mailboxUnreadBadge" class="text-[10px] px-1 rounded bg-rose-600 text-white mono">0</span>
         </button>
+      </div>
+    </div>
+
+    <!-- ALWAYS-VISIBLE CURRENT OBJECTIVE BAR (Tells player what to do next in 1 glance) -->
+    <div id="objectiveBar" class="bg-slate-900/95 border border-cyan-500/40 rounded-xl px-3.5 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0">
+      <div class="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+        <span id="objStepBadge" class="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold mono">第 1 / 5 步</span>
+        <span class="text-slate-400">当前目标：</span>
+        <strong id="objText" class="text-white font-semibold">派出采矿船，赚取第一笔金属</strong>
+      </div>
+      <div class="flex items-center gap-2">
+        <span id="seasonGoalMiniBadge" class="hidden md:inline text-xs text-amber-300">🏆 赛季目标：占领星域冲刺全服第一 / 击溃泰坦</span>
+        <button id="objGoBtn" type="button" class="cyber-btn-amber px-3 py-1 rounded-lg text-xs font-bold">帮我做 →</button>
       </div>
     </div>
 
@@ -529,6 +586,8 @@
           <div class="flex flex-wrap items-center gap-1.5">
             <input id="blueprintNameInput" type="text" value="猎户座级磁轨巡洋舰" class="bg-slate-900 border border-cyan-500/40 rounded px-2 py-1 text-xs text-white w-40 focus:outline-none focus:border-cyan-400" placeholder="输入蓝图名称..." />
             <button id="btnSaveBlueprint" class="cyber-btn px-2.5 py-1 rounded text-xs font-medium">💾 保存蓝图</button>
+            <button id="btnShareBlueprintCode" class="cyber-btn px-2.5 py-1 rounded text-xs font-medium" title="生成可发给好友的战舰蓝图分享码">📤 分享码</button>
+            <button id="btnImportBlueprintCode" class="cyber-btn px-2.5 py-1 rounded text-xs font-medium" title="粘贴好友的战舰蓝图分享码直接导入">📥 导入码</button>
             <button id="btnAutoFillBlueprint" class="cyber-btn-amber px-2.5 py-1 rounded text-xs font-medium">⚡ 智能推荐配装</button>
             <button id="btnToggleUninstallMode" class="cyber-btn px-2.5 py-1 rounded text-xs font-medium" title="开启后点击网格上的配件即可直接卸载">🔧 拆卸模式: 关</button>
             <button id="btnClearGrid" class="cyber-btn-red px-2 py-1 rounded text-xs">🗑️ 清空</button>
@@ -536,10 +595,10 @@
         </div>
 
         <!-- Designer Main Content Grid -->
-        <div class="flex-1 grid grid-cols-1 xl:grid-cols-12 gap-2.5 p-2.5 min-h-0 overflow-y-auto">
+        <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2.5 p-2.5 min-h-0 overflow-y-auto">
 
           <!-- Left Column: Module Palette & Relic Modules (4 cols) -->
-          <div class="xl:col-span-4 flex flex-col bg-slate-950/70 border border-slate-800 rounded-lg p-2.5 min-h-[320px]">
+          <div class="lg:col-span-4 flex flex-col bg-slate-950/70 border border-slate-800 rounded-lg p-2.5 min-h-[320px]">
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-bold text-cyan-300">📦 模块库 (点击选中后点击网格安装)</span>
               <span class="text-[10px] text-cyan-300 mono">点网格右上角×或再点一次即可拆卸</span>
@@ -561,7 +620,7 @@
           </div>
 
           <!-- Center Column: 2D Grid Editor & Adjacency Visualizer (5 cols) -->
-          <div class="xl:col-span-5 flex flex-col items-center justify-between bg-slate-950/90 border border-cyan-500/30 rounded-lg p-3 relative">
+          <div class="lg:col-span-5 flex flex-col items-center justify-between bg-slate-950/90 border border-cyan-500/30 rounded-lg p-3 relative">
             <div class="w-full flex items-center justify-between text-xs mb-2">
               <div class="flex items-center gap-2">
                 <span class="font-bold text-white" id="gridHullTitle">巡洋舰 7x7 船体拓扑网格</span>
@@ -604,7 +663,7 @@
             <!-- Adjacency Bonus Live Trigger Summary -->
             <div class="w-full mt-2 bg-slate-900/90 border border-amber-500/30 rounded p-2 text-[11px]">
               <div class="flex items-center justify-between mb-1">
-                <span class="font-semibold text-amber-300">🔗 已激活的组件邻接加成 (Adjacency Bonus)</span>
+                <span class="font-semibold text-amber-300">🔗 搭配加成（相邻模块互相强化）</span>
                 <span id="adjBonusCount" class="mono text-cyan-300">0 项触发</span>
               </div>
               <div id="adjBonusList" class="space-y-1 max-h-24 overflow-y-auto text-[11px] text-slate-300">
@@ -614,7 +673,7 @@
           </div>
 
           <!-- Right Column: Physics Telemetry, Tactical AI Chip & Saved Blueprints (3 cols) -->
-          <div class="xl:col-span-3 flex flex-col justify-between bg-slate-950/70 border border-slate-800 rounded-lg p-2.5 space-y-2.5">
+          <div class="lg:col-span-3 flex flex-col justify-between bg-slate-950/70 border border-slate-800 rounded-lg p-2.5 space-y-2.5">
             <!-- Hardcore Physics & Resource Constraints -->
             <div class="space-y-2">
               <div class="text-xs font-bold text-cyan-300 border-b border-slate-800 pb-1">⚖️ 硬核物理与资源约束遥测</div>
@@ -633,7 +692,7 @@
               <!-- CPU Bar -->
               <div>
                 <div class="flex justify-between text-[11px] mono mb-0.5">
-                  <span class="text-slate-300">🧠 算力占用 (CPU)</span>
+                  <span class="text-slate-300">🧠 电脑容量 (CPU)</span>
                   <span id="statCpuText" class="text-cyan-300">30 / 60 TFLOPS</span>
                 </div>
                 <div class="w-full h-2 bg-slate-900 rounded overflow-hidden border border-slate-800">
@@ -723,9 +782,9 @@
         </div>
 
         <!-- Combat Arena & Post-Battle Analytics Split -->
-        <div class="flex-1 grid grid-cols-1 xl:grid-cols-12 gap-2.5 p-2.5 min-h-0 overflow-y-auto">
+        <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2.5 p-2.5 min-h-0 overflow-y-auto">
           <!-- Left/Top: Real-Time Canvas Battle Visualizer (7 cols) -->
-          <div class="xl:col-span-7 flex flex-col bg-[#03060f] border border-cyan-500/30 rounded-lg overflow-hidden min-h-[320px] relative">
+          <div class="lg:col-span-7 flex flex-col bg-[#03060f] border border-cyan-500/30 rounded-lg overflow-hidden min-h-[320px] relative">
             <div class="px-3 py-1.5 bg-slate-950/90 border-b border-slate-800 flex items-center justify-between text-xs mono">
               <span id="combatAllyStatus" class="text-cyan-300 font-bold">我方舰队: 100%</span>
               <span id="combatTickTimer" class="text-amber-300">T + 0.0s</span>
@@ -758,7 +817,7 @@
           </div>
 
           <!-- Right/Bottom: Hardcore Post-Battle Report & Key Turning Points (5 cols) -->
-          <div class="xl:col-span-5 flex flex-col bg-slate-950/80 border border-slate-800 rounded-lg p-2.5 space-y-2.5 overflow-y-auto">
+          <div class="lg:col-span-5 flex flex-col bg-slate-950/80 border border-slate-800 rounded-lg p-2.5 space-y-2.5 overflow-y-auto">
             <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
               <span class="text-xs font-bold text-amber-300">📊 硬核战后复盘战报 (After-Action Telemetry)</span>
               <span id="combatResultBadge" class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[11px] mono">待推演</span>
@@ -766,6 +825,10 @@
 
             <!-- Quantitative Damage Breakdown Table -->
             <div class="overflow-x-auto">
+              <div id="combatDiagnosisBox" class="mb-2 p-2.5 rounded-lg bg-slate-900 border border-amber-400/50 text-xs flex flex-wrap items-center justify-between gap-2">
+                <span id="combatDiagnosisText" class="text-amber-200 font-medium">💡 战后诊断：战斗结束后将在此给出具体胜负原因与配装建议</span>
+                <button id="btnApplyCombatAdvice" type="button" class="hidden cyber-btn-amber px-2.5 py-1 rounded text-[11px] font-bold">🔧 一键优化蓝图</button>
+              </div>
               <table class="w-full text-[11px] mono text-left border-collapse">
                 <thead>
                   <tr class="border-b border-slate-800 text-slate-400">
@@ -839,6 +902,7 @@
               </div>
               <p class="text-[11px] text-slate-400 mb-3">对常规深空漂流残骸进行逆向拆解，必定获得 1 件带有 1~3 条随机词条的实验型舰船模块。</p>
             </div>
+            <div id="relicPityBar" class="text-xs mono text-purple-300 bg-purple-950/40 border border-purple-500/40 rounded-lg px-2.5 py-1 mb-1">✨ 幸运保底进度：再抽 <strong id="relicPityCount" class="text-amber-300">5</strong> 次必出紫色及以上模块</div>
             <button id="btnPullRelic1" class="cyber-btn w-full py-2 rounded text-xs font-bold mono">🌌 消耗 40 暗物质 (或 1 数据核)</button>
           </div>
 
@@ -999,9 +1063,9 @@
         </div>
 
         <!-- 3-Line Tech Tree & Real-Time Faction Leaderboards -->
-        <div class="grid grid-cols-1 xl:grid-cols-12 gap-3 flex-1">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 flex-1">
           <!-- Tech Tree (7 cols) -->
-          <div class="xl:col-span-7 bg-slate-950/80 border border-slate-800 rounded-lg p-3 flex flex-col space-y-2.5">
+          <div class="lg:col-span-7 bg-slate-950/80 border border-slate-800 rounded-lg p-3 flex flex-col space-y-2.5">
             <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
               <span class="text-xs font-bold text-cyan-300">🔬 帝国三线科技树 (消耗🧠算力与💎晶体研发)</span>
               <span class="text-[11px] mono text-amber-300">可用算力: <strong id="techViewCompute">120</strong></span>
@@ -1012,7 +1076,7 @@
           </div>
 
           <!-- Real-Time Galactic Leaderboards (5 cols) -->
-          <div class="xl:col-span-5 bg-slate-950/80 border border-slate-800 rounded-lg p-3 flex flex-col space-y-2">
+          <div class="lg:col-span-5 bg-slate-950/80 border border-slate-800 rounded-lg p-3 flex flex-col space-y-2">
             <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
               <span class="text-xs font-bold text-amber-300">🏆 实时星际势力排行榜</span>
               <div class="flex gap-1 text-[10px] mono" id="leaderboardTabs">
@@ -1080,7 +1144,7 @@
         </div>
 
         <!-- Split Layout: Left All-Players Real-time Leaderboard (6 cols) / Right Deep-Space Radar Target Base (Hidden unless searched!) -->
-        <div class="flex-1 grid grid-cols-1 xl:grid-cols-12 gap-3 min-h-0">
+        <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 min-h-0">
           <!-- Left: All Played Commanders Real-Time Leaderboard (Shows Rank & Score, Base Coords Masked until Searched) -->
           <div class="xl:col-span-6 bg-slate-950/85 border border-slate-800 rounded-lg p-3 flex flex-col space-y-2">
             <div class="flex flex-wrap items-center justify-between gap-1 border-b border-slate-800 pb-1.5">
@@ -1302,14 +1366,13 @@
           </p>
         </div>
 
-        <!-- Prologue Main Story Card -->
-        <div class="bg-slate-950/90 border border-amber-500/35 rounded-xl p-4 text-left space-y-2 shadow-inner">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-amber-300 mono">📜 主线史诗序章：《先驱者余烬与银河王座》</span>
-            <span class="text-[10px] text-slate-400 mono">星历 3042 年</span>
+        <!-- One-Sentence Core Loop Card -->
+        <div class="bg-slate-950/90 border border-cyan-500/40 rounded-xl p-4 text-left space-y-2">
+          <div class="text-sm sm:text-base font-bold text-cyan-300">
+            采矿 → 造舰 → 占星系 → 变强。设计你自己的战舰，与全服玩家争夺银河第一！
           </div>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            百年前，「先驱者帝国」在未知维度风暴中崩解，只留下遍布脉冲星与电离星云的超空间航道，以及埋藏着逆天词条模块的古代遗迹。如今六大星际强权割据一方，远古泰坦残骸与深空虫群蠢蠢欲动。你将作为新晋苏醒的最高指挥官，从零拼装旗舰、建立星际势力，争夺银河唯一霸权！
+          <p class="text-xs text-slate-300">
+            开局拥有 0 艘战舰和 1 座母星基地，跟着上方「当前目标」指引 3 分钟即可上手；首战胜利后即可解锁更多星际系统。
           </p>
         </div>
 
@@ -1601,10 +1664,40 @@
       </div>
       <div id="modalBaseBuildQueueBanner" class="hidden p-2 rounded bg-cyan-950/60 border border-cyan-400/50 text-xs text-cyan-200 mono flex items-center justify-between">
         <span id="modalBaseBuildQueueText">🔨 正在建造...</span>
-        <span id="modalBaseBuildQueueEta" class="text-amber-300 font-bold">剩余 0s</span>
+        <div class="flex items-center gap-2">
+          <span id="modalBaseBuildQueueEta" class="text-amber-300 font-bold">剩余 0s</span>
+          <button id="btnSpeedUpBaseBuild" type="button" class="cyber-btn-amber px-2 py-0.5 rounded text-[11px] font-bold">⚡ 立即完工 (🌌15)</button>
+        </div>
       </div>
       <div id="modalBaseDefenseGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Offline Welcome Back & Claim Modal -->
+  <div id="offlineWelcomeModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="cyber-panel max-w-md w-full rounded-2xl p-5 border-2 border-emerald-400/70 shadow-2xl space-y-4 text-center">
+      <div class="text-3xl">🌙</div>
+      <div>
+        <h3 class="text-base font-extrabold text-emerald-300">欢迎回到星穹战场，指挥官！</h3>
+        <p id="offlineDurationText" class="text-xs text-slate-300 mt-1">离线期间帝国设施持续运转，为你积累了丰厚物资：</p>
+      </div>
+      <div id="offlineRewardsGrid" class="grid grid-cols-2 gap-2 text-xs mono bg-slate-950/90 p-3 rounded-xl border border-slate-800"></div>
+      <button id="btnClaimOfflineRewards" type="button" class="cyber-btn-amber w-full py-2.5 rounded-xl text-sm font-extrabold shadow-lg">🎁 一键领取全部离线收益</button>
+    </div>
+  </div>
+
+  <!-- Blueprint Share Code Import Modal -->
+  <div id="bpImportModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="cyber-panel max-w-md w-full rounded-xl p-4 space-y-3">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+        <span class="text-sm font-bold text-cyan-300">📥 导入好友战舰蓝图分享码</span>
+        <button id="btnCloseBpImportModal" type="button" class="text-slate-400 hover:text-white text-sm">✕</button>
+      </div>
+      <textarea id="bpImportCodeInput" rows="3" placeholder="在此粘贴 SF-BP-... 蓝图分享码..." class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-white mono"></textarea>
+      <div class="flex justify-end gap-2">
+        <button id="btnConfirmBpImport" type="button" class="cyber-btn-amber px-4 py-1.5 rounded-lg text-xs font-bold">确认导入设计器</button>
       </div>
     </div>
   </div>
@@ -1729,8 +1822,104 @@
         } catch (e) {
           // Ignore audio context locks
         }
+      },
+      playLayered(kind) {
+        try {
+          if (!this.enabled) return;
+          if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+          const now = this.ctx.currentTime;
+          if (kind === 'coin') {
+            [880, 1174].forEach((freq, i) => {
+              const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+              o.type = 'sine'; o.frequency.setValueAtTime(freq, now + i * 0.06);
+              g.gain.setValueAtTime(0.08, now + i * 0.06);
+              g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.06 + 0.16);
+              o.connect(g); g.connect(this.ctx.destination);
+              o.start(now + i * 0.06); o.stop(now + i * 0.06 + 0.17);
+            });
+          } else if (kind === 'legendary') {
+            [220, 330, 440, 660, 880].forEach((freq, i) => {
+              const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+              o.type = i === 0 ? 'sawtooth' : 'triangle';
+              o.frequency.setValueAtTime(freq, now + i * 0.07);
+              g.gain.setValueAtTime(0.09, now + i * 0.07);
+              g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.07 + 0.45);
+              o.connect(g); g.connect(this.ctx.destination);
+              o.start(now + i * 0.07); o.stop(now + i * 0.07 + 0.46);
+            });
+          } else if (kind === 'crit') {
+            const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+            o.type = 'square'; o.frequency.setValueAtTime(190, now);
+            o.frequency.exponentialRampToValueAtTime(55, now + 0.14);
+            g.gain.setValueAtTime(0.11, now);
+            g.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+            o.connect(g); g.connect(this.ctx.destination);
+            o.start(now); o.stop(now + 0.16);
+          }
+        } catch (e) {}
       }
     };
+
+    function floatText(x, y, text, color = '#fbbf24', fontSize = '13px') {
+      const el = document.createElement('div');
+      el.className = 'float-text';
+      el.textContent = text;
+      el.style.left = `${x}px`;
+      el.style.top = `${y}px`;
+      el.style.color = color;
+      el.style.fontSize = fontSize;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 960);
+    }
+
+    function triggerScreenShake() {
+      document.body.classList.remove('shake-hit');
+      void document.body.offsetWidth;
+      document.body.classList.add('shake-hit');
+      setTimeout(() => document.body.classList.remove('shake-hit'), 300);
+    }
+
+    function flyResourceIcons(startX, startY, targetElId, emoji = '⚙️', count = 6) {
+      const target = document.getElementById(targetElId);
+      if (!target) return;
+      const tr = target.getBoundingClientRect();
+      const tx = tr.left + tr.width / 2;
+      const ty = tr.top + tr.height / 2;
+      for (let i = 0; i < count; i++) {
+        const p = document.createElement('div');
+        p.className = 'fly-res-particle';
+        p.textContent = emoji;
+        const sx = startX + (Math.random() - 0.5) * 44;
+        const sy = startY + (Math.random() - 0.5) * 36;
+        p.style.left = `${sx}px`;
+        p.style.top = `${sy}px`;
+        document.body.appendChild(p);
+        requestAnimationFrame(() => {
+          p.style.transform = `translate(${tx - sx}px, ${ty - sy}px) scale(0.65)`;
+          p.style.opacity = '0.2';
+        });
+        setTimeout(() => p.remove(), 680 + i * 35);
+      }
+    }
+
+    function animateNumber(el, targetVal) {
+      if (!el) return;
+      const startVal = parseInt(el.textContent, 10);
+      if (isNaN(startVal) || startVal === targetVal) {
+        el.textContent = targetVal;
+        return;
+      }
+      const diff = targetVal - startVal;
+      if (Math.abs(diff) < 3) { el.textContent = targetVal; return; }
+      const steps = 8;
+      let cur = 0;
+      const stepFn = () => {
+        cur++;
+        el.textContent = cur >= steps ? targetVal : Math.round(startVal + (diff * cur) / steps);
+        if (cur < steps) requestAnimationFrame(stepFn);
+      };
+      requestAnimationFrame(stepFn);
+    }
 
     // =========================================================================
     // 2. STATIC DEFINITIONS: HULLS, MODULES, AFFIXES, TECHS, AI LORDS
@@ -2925,12 +3114,12 @@
       };
 
       GameState.blueprints = [bp1, bp2];
-      // Load bp1 into active designer
-      GameState.designer.hullId = bp1.hullId;
-      GameState.designer.name = bp1.name;
-      GameState.designer.aiRange = bp1.aiRange;
-      GameState.designer.aiTarget = bp1.aiTarget;
-      GameState.designer.grid = structuredClone(bp1.grid);
+      // Load beginner-friendly 5x5 Frigate (bp2) into active designer by default!
+      GameState.designer.hullId = bp2.hullId;
+      GameState.designer.name = bp2.name;
+      GameState.designer.aiRange = bp2.aiRange;
+      GameState.designer.aiTarget = bp2.aiTarget;
+      GameState.designer.grid = structuredClone(bp2.grid);
     }
 
     function generateProceduralGalaxy(seedStr = '') {
@@ -3336,19 +3525,19 @@
       if (viewId === 'starmap') {
         resizeAndDrawStarmap();
       } else if (viewId === 'designer') {
-        renderDesignerAll();
+        safeRender('designer', renderDesignerAll);
       } else if (viewId === 'combat') {
         resizeCombatCanvas();
         drawCombatFrame();
         renderBattleHistoryList();
       } else if (viewId === 'relic') {
-        renderRelicView();
+        safeRender('relic', renderRelicView);
       } else if (viewId === 'diplomacy') {
-        renderDiplomacyView();
+        safeRender('diplomacy', renderDiplomacyView);
       } else if (viewId === 'empire') {
-        renderEmpireView();
+        safeRender('empire', renderEmpireView);
       } else if (viewId === 'players') {
-        renderPlayersView();
+        safeRender('players', renderPlayersView);
         syncWithCloudLeaderboard(false).then(() => renderPlayersView());
       }
     }
@@ -3415,6 +3604,79 @@
       return GameState.fleet.reduce((sum, s) => sum + (s.stats?.combatPower || 0), 0);
     }
 
+    const CORE_OBJECTIVES = [
+      {
+        text: '在星图派出采矿船，赚取第一笔金属',
+        done: () => (GameState.activeMiningJobs && GameState.activeMiningJobs.length > 0) || GameState.resources.metal > 1420 || GameState.fleet.length >= 1,
+        go: () => { switchView('starmap'); selectSystemById(0); document.getElementById('btnDispatchMiner')?.click(); }
+      },
+      {
+        text: '进入基地船坞，建造你的第一艘护卫舰',
+        done: () => GameState.fleet.length >= 1,
+        go: () => { switchView('designer'); showToast('💡 直接点击左下角「➕ 建造当前蓝图」或右上角推荐配装即可造出第一艘舰！', 'cyan'); }
+      },
+      {
+        text: '率领新舰队，攻占邻近的 1 号海盗前哨',
+        done: () => GameState.starSystems.filter(s => s.owner === 'player').length >= 2,
+        go: () => { switchView('starmap'); selectSystemById(1); showToast('💡 已选中 2 号星系，点击「⚔️ 舰队出征 / 夺取星系」即可开战！', 'amber'); }
+      },
+      {
+        text: '扩编第 2 艘战舰，并占领至少 3 个星系',
+        done: () => GameState.starSystems.filter(s => s.owner === 'player').length >= 3 && GameState.fleet.length >= 2,
+        go: () => { switchView(GameState.fleet.length < 2 ? 'designer' : 'starmap'); }
+      },
+      {
+        text: '进入科研中心，研发第一项帝国科技',
+        done: () => Object.values(GameState.techLevels || {}).reduce((a, b) => a + b, 0) >= 1,
+        go: () => { switchView('empire'); }
+      }
+    ];
+
+    function updateObjectiveAndProgressiveUnlocks() {
+      const ownedCount = (GameState.starSystems || []).filter(s => s.owner === 'player').length;
+      const fleetCount = (GameState.fleet || []).length;
+      const totalTech = Object.values(GameState.techLevels || {}).reduce((a, b) => a + b, 0);
+      const isVeteran = !!(GameState.commander?.onboardingCompleted && (ownedCount >= 3 || fleetCount >= 2));
+
+      const idx = CORE_OBJECTIVES.findIndex(o => !o.done());
+      const stepEl = document.getElementById('objStepBadge');
+      const textEl = document.getElementById('objText');
+      const goBtn = document.getElementById('objGoBtn');
+      if (stepEl && textEl && goBtn) {
+        if (idx === -1) {
+          stepEl.textContent = '赛季目标';
+          textEl.textContent = '🏆 全部入门目标达成！扩军冲刺全服战功 #1，或进入联盟讨伐泰坦 BOSS';
+          goBtn.textContent = '查看全服榜 →';
+          goBtn.onclick = () => switchView('players');
+        } else {
+          const obj = CORE_OBJECTIVES[idx];
+          stepEl.textContent = `第 ${idx + 1} / ${CORE_OBJECTIVES.length} 步`;
+          textEl.textContent = obj.text;
+          goBtn.textContent = '帮我做 →';
+          goBtn.onclick = obj.go;
+        }
+      }
+
+      const NAV_UNLOCK = {
+        combat: () => fleetCount >= 1 || isVeteran,
+        empire: () => ownedCount >= 2 || isVeteran,
+        relic: () => ownedCount >= 3 || isVeteran,
+        diplomacy: () => totalTech >= 1 || isVeteran,
+        players: () => ownedCount >= 2 || isVeteran
+      };
+      document.querySelectorAll('#mainNav .nav-btn').forEach(b => {
+        const rule = NAV_UNLOCK[b.dataset.view];
+        if (rule) b.classList.toggle('hidden', !rule());
+      });
+
+      const resDeutEl = document.getElementById('resDeut')?.parentElement;
+      const resDarkEl = document.getElementById('resDark')?.parentElement;
+      const resCompEl = document.getElementById('resCompute')?.parentElement;
+      if (resDeutEl) resDeutEl.classList.toggle('hidden', !(fleetCount >= 1 || isVeteran));
+      if (resCompEl) resCompEl.classList.toggle('hidden', !(ownedCount >= 2 || isVeteran));
+      if (resDarkEl) resDarkEl.classList.toggle('hidden', !(ownedCount >= 3 || isVeteran));
+    }
+
     function renderTopBarAndSidebar() {
       if (!GameState.commander) {
         GameState.commander = {
@@ -3446,15 +3708,16 @@
       }
 
       const inc = calculateEmpireIncomes();
-      document.getElementById('resMetal').textContent = GameState.resources.metal;
+      updateObjectiveAndProgressiveUnlocks();
+      animateNumber(document.getElementById('resMetal'), GameState.resources.metal);
       document.getElementById('incMetal').textContent = `${inc.metal >= 0 ? '+' : ''}${inc.metal}`;
       const upkeepEl = document.getElementById('fleetUpkeepBadge');
       if (upkeepEl) upkeepEl.textContent = `维护: -${inc.upkeepMetal || 0}⚙️ -${inc.upkeepDeut || 0}🧪`;
-      document.getElementById('resCrystal').textContent = GameState.resources.crystal;
+      animateNumber(document.getElementById('resCrystal'), GameState.resources.crystal);
       document.getElementById('incCrystal').textContent = `+${inc.crystal}`;
-      document.getElementById('resDeut').textContent = GameState.resources.deut;
+      animateNumber(document.getElementById('resDeut'), GameState.resources.deut);
       document.getElementById('incDeut').textContent = `+${inc.deut}`;
-      document.getElementById('resDark').textContent = GameState.resources.darkMatter;
+      animateNumber(document.getElementById('resDark'), GameState.resources.darkMatter);
       document.getElementById('incDark').textContent = `+${inc.dark}`;
       document.getElementById('resCompute').textContent = GameState.resources.compute;
       document.getElementById('turnCounter').textContent = formatStardate(GameState.turn);
@@ -3648,14 +3911,59 @@
       return { name: '未知势力', color: '#94a3b8' };
     }
 
+    let starfieldCacheCanvas = null;
+    let starfieldCacheKey = '';
+
+    function setupHiDpiCanvas(canvas) {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+      const W = Math.max(1, rect.width || canvas.clientWidth || 680);
+      const H = Math.max(1, rect.height || canvas.clientHeight || 320);
+      const targetW = Math.round(W * dpr);
+      const targetH = Math.round(H * dpr);
+      if (canvas.width !== targetW || canvas.height !== targetH) {
+        canvas.width = targetW;
+        canvas.height = targetH;
+      }
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { ctx, W, H };
+    }
+
+    function getStarfieldBackground(W, H) {
+      const key = `${Math.round(W)}x${Math.round(H)}`;
+      if (starfieldCacheCanvas && starfieldCacheKey === key) return starfieldCacheCanvas;
+      const c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(W));
+      c.height = Math.max(1, Math.round(H));
+      const g = c.getContext('2d');
+      const bg = g.createRadialGradient(W * 0.35, H * 0.42, 0, W * 0.35, H * 0.42, Math.max(W, H) * 0.85);
+      bg.addColorStop(0, '#121e38');
+      bg.addColorStop(0.55, '#091020');
+      bg.addColorStop(1, '#050811');
+      g.fillStyle = bg;
+      g.fillRect(0, 0, c.width, c.height);
+      let seed = 1337;
+      const rand = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+      for (let i = 0; i < 200; i++) {
+        g.globalAlpha = rand() * 0.65 + 0.2;
+        g.fillStyle = i % 9 === 0 ? '#bae6fd' : (i % 13 === 0 ? '#fde68a' : '#e2e8f0');
+        const sz = rand() * 1.5 + 0.5;
+        g.fillRect(rand() * c.width, rand() * c.height, sz, sz);
+      }
+      g.globalAlpha = 1;
+      starfieldCacheCanvas = c;
+      starfieldCacheKey = key;
+      return c;
+    }
+
     function resizeAndDrawStarmap() {
       const container = document.getElementById('starmapContainer');
       const canvas = document.getElementById('starmapCanvas');
       if (!container || !canvas) return;
       const rect = container.getBoundingClientRect();
       if (rect.width === 0 || rect.height === 0) return;
-      canvas.width = rect.width;
-      canvas.height = rect.height;
+      setupHiDpiCanvas(canvas);
       drawStarmap();
       updateSelectedSystemHud();
     }
@@ -3663,11 +3971,11 @@
     function drawStarmap() {
       const canvas = document.getElementById('starmapCanvas');
       if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      const W = canvas.width;
-      const H = canvas.height;
+      const { ctx, W, H } = setupHiDpiCanvas(canvas);
 
       ctx.clearRect(0, 0, W, H);
+      const sf = getStarfieldBackground(W, H);
+      ctx.drawImage(sf, 0, 0, W, H);
 
       // Subtle background coordinate grid
       ctx.strokeStyle = 'rgba(0, 240, 255, 0.04)';
@@ -3690,6 +3998,17 @@
           sA.revealed = true;
           sB.revealed = true;
         }
+      });
+
+      // Draw Player Territory Aura connecting owned systems (Visible Empire Expansion!)
+      const playerOwned = GameState.starSystems.filter(sys => sys.owner === 'player');
+      playerOwned.forEach(sys => {
+        const sx = sys.x * W, sy = sys.y * H;
+        const aura = ctx.createRadialGradient(sx, sy, 8, sx, sy, 68);
+        aura.addColorStop(0, 'rgba(56, 189, 248, 0.16)');
+        aura.addColorStop(1, 'rgba(56, 189, 248, 0)');
+        ctx.fillStyle = aura;
+        ctx.beginPath(); ctx.arc(sx, sy, 68, 0, Math.PI * 2); ctx.fill();
       });
 
       // Draw Hyperlanes (only between visible/adjacent systems)
@@ -3734,6 +4053,28 @@
           grad.addColorStop(1, 'rgba(192, 132, 252, 0)');
           ctx.fillStyle = grad;
           ctx.beginPath(); ctx.arc(cx, cy, 24, 0, Math.PI * 2); ctx.fill();
+        }
+
+        // Home Base Visual Growth (Orbital defense rings & docked ship dots)
+        if (sys.id === 0) {
+          const bd = GameState.baseDefenses || { turret: 1, shield: 1, droneDock: 0, antimatter: 0 };
+          const totalBaseLv = Math.min(6, Math.max(1, (bd.turret || 0) + (bd.shield || 0) + (bd.droneDock || 0) + (bd.antimatter || 0)));
+          const nowT = Date.now();
+          for (let ring = 0; ring < Math.min(totalBaseLv, 5); ring++) {
+            const rr = 14 + ring * 4.5;
+            ctx.strokeStyle = `rgba(56, 189, 248, ${0.55 - ring * 0.08})`;
+            ctx.lineWidth = 1.2;
+            ctx.beginPath(); ctx.arc(cx, cy, rr, 0, Math.PI * 2); ctx.stroke();
+            const ang = nowT / 1400 + ring * 1.4;
+            ctx.fillStyle = '#fbbf24';
+            ctx.fillRect(cx + Math.cos(ang) * rr - 2, cy + Math.sin(ang) * rr - 2, 4, 4);
+          }
+          const docked = Math.min(10, (GameState.fleet || []).filter(f => !f.onMission).length);
+          for (let d = 0; d < docked; d++) {
+            const da = -Math.PI * 0.8 + d * 0.35;
+            ctx.fillStyle = '#38bdf8';
+            ctx.beginPath(); ctx.arc(cx + Math.cos(da) * 26, cy + Math.sin(da) * 26, 2.2, 0, Math.PI * 2); ctx.fill();
+          }
         }
 
         // Selection ring or Crisis ring
@@ -3939,7 +4280,15 @@
 
       const btnAttack = document.getElementById('btnAttackSystem');
       btnAttack.disabled = sys.owner === 'player';
-      btnAttack.textContent = sys.owner === 'player' ? '✓ 我方领地' : `⚔️ 进攻夺取 (驻军 ${sys.garrisonPower})`;
+      if (sys.owner === 'player') {
+        btnAttack.textContent = '✓ 我方领地';
+      } else {
+        const myPow = getPlayerTotalFleetPower();
+        const ratio = myPow / Math.max(1, sys.garrisonPower * 2.2);
+        const estPct = Math.min(98, Math.max(12, Math.round(ratio * 58)));
+        const tag = estPct >= 70 ? '🟢稳胜' : (estPct >= 45 ? '🟡均势' : '🔴高危');
+        btnAttack.textContent = `⚔️ 进攻 (${tag} ${estPct}% · 驻军${sys.garrisonPower})`;
+      }
 
       const btnRelic = document.getElementById('btnExploreRelic');
       if (sys.envType === 'relic' && !sys.relicHarvested) {
@@ -4711,6 +5060,8 @@
           id: `ally_${idx}`,
           side: 'ally',
           name: f.name,
+          hullId: f.hullId || 'cruiser',
+          gridMap: f.gridMap || (GameState.blueprints.find(b => b.name === (f.blueprintName || '').replace(/^\[援军\]\s*/, ''))?.grid) || null,
           hullName: s.hullName,
           x: 110 + (idx % 2) * 35,
           y: 70 + idx * 65,
@@ -5064,7 +5415,24 @@
         }
       }
 
-      target.hp = Math.max(0, target.hp - finalHullDmg);
+      const wasAlive = target.hp > 0;
+              target.hp = Math.max(0, target.hp - finalHullDmg);
+              if (Math.random() < 0.35 || finalHullDmg >= 45) {
+                const cEl = document.getElementById('combatCanvas');
+                if (cEl) {
+                  const cr = cEl.getBoundingClientRect();
+                  const uS = Math.min(cr.width / 680, cr.height / 320);
+                  const fx = cr.left + target.x * uS;
+                  const fy = cr.top + target.y * uS - 12;
+                  const isBigHit = finalHullDmg >= 65;
+                  floatText(fx, fy, isBigHit ? `💥 ${Math.round(finalHullDmg)}` : `-${Math.round(finalHullDmg)}`, isBigHit ? '#fbbf24' : '#f87171', isBigHit ? '15px' : '11px');
+                  if (isBigHit) SoundFX.playLayered('crit');
+                }
+              }
+              if (wasAlive && target.hp <= 0) {
+                triggerScreenShake();
+                SoundFX.playLayered('crit');
+              }
       recordWeaponDamage(statBucket, w.weaponType, finalHullDmg);
 
       CombatSim.explosions.push({
@@ -5115,8 +5483,7 @@
       if (!wrap || !canvas) return;
       const rect = wrap.getBoundingClientRect();
       if (rect.width > 0 && rect.height > 0) {
-        canvas.width = rect.width;
-        canvas.height = rect.height;
+        setupHiDpiCanvas(canvas);
       }
     }
 
@@ -5141,11 +5508,10 @@
     function drawCombatFrame() {
       const canvas = document.getElementById('combatCanvas');
       if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      const W = canvas.width || 680;
-      const H = canvas.height || 320;
-      const scaleX = W / 680;
-      const scaleY = H / 320;
+      const { ctx, W, H } = setupHiDpiCanvas(canvas);
+      const uniScale = Math.min(W / 680, H / 320);
+      const scaleX = uniScale;
+      const scaleY = uniScale;
 
       ctx.clearRect(0, 0, W, H);
 
@@ -5324,6 +5690,28 @@
       document.getElementById('combatEnemyStatus').textContent = `敌方舰队: ${Math.round((enemyHpSum / enemyMaxSum) * 100)}%`;
       document.getElementById('combatTickTimer').textContent = `T + ${(CombatSim.tick / 20).toFixed(1)}s`;
 
+      const diagTextEl = document.getElementById('combatDiagnosisText');
+      const diagBtnEl = document.getElementById('btnApplyCombatAdvice');
+      if (diagTextEl) {
+        const isWin = (CombatSim.enemies || []).every(e => e.hp <= 0);
+        const stAlly = CombatSim.stats?.ally || {};
+        const stEnemy = CombatSim.stats?.enemy || {};
+        if (!isWin) {
+          if ((stEnemy.shieldAbs || 0) > (stAlly.rail || 0) && (stAlly.laser || 0) >= (stAlly.rail || 0)) {
+            diagTextEl.textContent = '❌ 战败原因：敌方护盾吸收了大量伤害，而你以激光武器为主（破盾弱）。建议加装磁轨炮或破盾鱼雷！';
+            if (diagBtnEl) diagBtnEl.classList.remove('hidden');
+          } else if ((stAlly.overheatTicks || 0) > 15) {
+            diagTextEl.textContent = '❌ 战败原因：舰船武器多次过热停火导致输出断档。建议加装 1 个「液氦散热器」或扩建舰队！';
+            if (diagBtnEl) diagBtnEl.classList.remove('hidden');
+          } else {
+            diagTextEl.textContent = '❌ 战败原因：敌方火力与总血量占优。建议先多造 1-2 艘战舰或去「基地船坞」智能平衡配装后再挑战！';
+            if (diagBtnEl) diagBtnEl.classList.remove('hidden');
+          }
+        } else {
+          diagTextEl.textContent = '✅ 获胜原因：你的舰队火力与护盾压制了敌方阵型！继续按上方目标推进即可解锁更多星际系统。';
+          if (diagBtnEl) diagBtnEl.classList.add('hidden');
+        }
+      }
       document.getElementById('repAllyLaser').textContent = a.laser;
       document.getElementById('repEnemyLaser').textContent = e.laser;
       document.getElementById('repAllyRail').textContent = a.rail;
@@ -5495,8 +5883,8 @@
 
         modal.classList.add('hidden');
         renderTopBarAndSidebar();
-        renderDiplomacyView();
-        renderPlayersView();
+        safeRender('diplomacy', renderDiplomacyView);
+        safeRender('players', renderPlayersView);
         drawStarmap();
         saveToStorage();
       };
@@ -5511,6 +5899,14 @@
         const allyLost = (CombatSim.allies || []).filter(a => a.hp <= 0).length;
         const enemyLost = (CombatSim.enemies || []).filter(e => e.hp <= 0).length;
         const victory = (CombatSim.enemies || []).every(e => e.hp <= 0);
+        if (!CombatSim.isSimulationSpar) {
+          GameState.winStreak = victory ? (GameState.winStreak || 0) + 1 : 0;
+          if (victory && GameState.winStreak >= 2) {
+            const streakBonus = Math.min(120, GameState.winStreak * 20);
+            GameState.resources.crystal += streakBonus;
+            showToast(`🔥 ${GameState.winStreak} 连胜！额外奖励 💎+${streakBonus} 晶体！`, 'amber');
+          }
+        }
         GameState.battleHistory.unshift({
           title: CombatSim.title || '星域遭遇战',
           victory,
@@ -5640,7 +6036,7 @@
           addLog(`👹 联盟BOSS讨伐结算：单场打出 ${totalDealt} 点总伤害！获得 🌌+${rewardDark} 💎+${rewardCrys}，已计入联盟伤害排行榜！`, 'relic');
           showToast(`👹 对联盟BOSS打出 ${totalDealt} 伤害！获 🌌+${rewardDark} 💎+${rewardCrys}`, 'amber');
           saveToStorage();
-          renderDiplomacyView();
+          safeRender('diplomacy', renderDiplomacyView);
           renderTopBarAndSidebar();
         }
 
@@ -5826,12 +6222,23 @@
       }
 
       GameState.latestRelicPulls = pulls;
+      GameState.relicPullCount = (GameState.relicPullCount || 0) + pulls.length;
+      const pityRem = 5 - (GameState.relicPullCount % 5);
+      const pityEl = document.getElementById('relicPityCount');
+      if (pityEl) pityEl.textContent = String(pityRem === 0 ? 5 : pityRem);
+      if (pulls.some(x => x.rarityTier >= 4)) {
+        triggerScreenShake();
+        SoundFX.playLayered('legendary');
+        floatText(window.innerWidth / 2, window.innerHeight * 0.35, '✨ 传说级遗迹模块降世！', '#fbbf24', '20px');
+      } else if (pulls.some(x => x.rarityTier >= 3)) {
+        SoundFX.playLayered('coin');
+      }
       SoundFX.play('relic');
       const best = pulls.slice().sort((a, b) => b.rarityTier - a.rarityTier)[0];
       addLog(`🎲 遗迹逆向工程完成 (${count}连)，最高产出：${best.name}！`, 'relic');
       showToast(`解析成功！获得 ${best.name}`, 'amber');
 
-      renderRelicView();
+      safeRender('relic', renderRelicView);
       renderTopBarAndSidebar();
       saveToStorage();
     }
@@ -6047,10 +6454,6 @@
           </div>
         `;
       }).join('');
-      const baseGridEl = document.getElementById('myBaseDefenseGrid');
-      if (baseGridEl) baseGridEl.innerHTML = cardsHtml;
-      const mGrid = document.getElementById('modalBaseDefenseGrid');
-      if (mGrid) mGrid.innerHTML = cardsHtml;
     }
 
     function renderEmpireView() {
@@ -6225,7 +6628,9 @@
       if (objEl) objEl.textContent = cur.objectiveText;
     }
 
+    let _cachedPlayersRegistry = null;
     function loadGlobalPlayersRegistry() {
+      if (Array.isArray(_cachedPlayersRegistry)) return _cachedPlayersRegistry;
       let list = [];
       try {
         const raw = localStorage.getItem(GLOBAL_PLAYERS_KEY);
@@ -6289,6 +6694,7 @@
         }
       } catch (e) {}
 
+      _cachedPlayersRegistry = list;
       saveGlobalPlayersRegistry(list);
       return list;
     }
@@ -6379,8 +6785,10 @@
         let lastAttackerUid = '';
         for (const [raidId, raid] of Object.entries(inboxObj)) {
           if (!raid || raid.processed) continue;
-          const mLoss = Math.min(GameState.resources.metal, raid.lootMetal || 0);
-          const cLoss = Math.min(GameState.resources.crystal, raid.lootCrystal || 0);
+          const maxMetalCap = Math.max(50, Math.round(GameState.resources.metal * 0.25));
+          const maxCrysCap = Math.max(40, Math.round(GameState.resources.crystal * 0.25));
+          const mLoss = Math.min(maxMetalCap, Math.max(0, Number(raid.lootMetal) || 0));
+          const cLoss = Math.min(maxCrysCap, Math.max(0, Number(raid.lootCrystal) || 0));
           GameState.resources.metal -= mLoss;
           GameState.resources.crystal -= cLoss;
           const isTribute = raid.type === 'tribute';
@@ -6492,8 +6900,8 @@
             if (incoming.length > 0) {
               const merged = mergePlayerLists(loadGlobalPlayersRegistry(), incoming);
               saveGlobalPlayersRegistry(merged);
-              renderPlayersView();
-              renderEmpireView();
+              safeRender('players', renderPlayersView);
+              safeRender('empire', renderEmpireView);
               updateCloudStatusUI('online', `☁️ Firebase 实时订阅中 · 全服 ${merged.length} 人 (${new Date().toLocaleTimeString()})`);
             }
           } catch (e) {}
@@ -6563,6 +6971,7 @@
     }
 
     function saveGlobalPlayersRegistry(list) {
+      _cachedPlayersRegistry = Array.isArray(list) ? list : [];
       try {
         localStorage.setItem(GLOBAL_PLAYERS_KEY, JSON.stringify(list));
         if (starforgeBroadcast) {
@@ -6711,24 +7120,25 @@
 
       SoundFX.play('relic');
       document.getElementById('commanderSetupModal').classList.add('hidden');
+      if (GameState.commander?.onboardingCompleted) document.getElementById('stepGuideRibbon')?.classList.add('hidden');
       addLog(`📂 已直接进入指挥官【${GameState.commander.name} (${GameState.commander.uid || 'UID'})】，完整恢复 ⚙️${GameState.resources.metal} 💎${GameState.resources.crystal} 🌌${GameState.resources.darkMatter} 与全部舰队！`, 'good');
       showToast(`欢迎回来，${GameState.commander.name}！已直接进入游戏`, 'emerald');
 
       renderTopBarAndSidebar();
       renderLogs();
-      renderEmpireView();
-      renderPlayersView();
+      safeRender('empire', renderEmpireView);
+      safeRender('players', renderPlayersView);
       resizeAndDrawStarmap();
       syncWithCloudLeaderboard(false).then(() => {
-        renderPlayersView();
-        renderEmpireView();
+        safeRender('players', renderPlayersView);
+        safeRender('empire', renderEmpireView);
         renderTopBarAndSidebar();
       });
       if (cloudSyncIntervalId) clearInterval(cloudSyncIntervalId);
       cloudSyncIntervalId = setInterval(() => {
         syncWithCloudLeaderboard(false);
       }, 15000);
-      renderPlayersView();
+      safeRender('players', renderPlayersView);
       return true;
     }
 
@@ -6941,7 +7351,7 @@
       syncCurrentCommanderToGlobalRegistry();
       saveToStorage();
       syncWithCloudLeaderboard(true).then(() => {
-        renderPlayersView();
+        safeRender('players', renderPlayersView);
         renderTopBarAndSidebar();
       });
       SoundFX.play('relic');
@@ -6951,7 +7361,7 @@
 
       renderTopBarAndSidebar();
       resizeAndDrawStarmap();
-      renderPlayersView();
+      safeRender('players', renderPlayersView);
     }
 
     function renderPlayersView() {
@@ -6990,7 +7400,7 @@
                   <div class="flex items-center gap-1.5">
                     <span class="text-xs font-bold ${isMe ? 'text-amber-300' : 'text-white'} truncate">${escapeHtml(p.name)}</span>
                     <span class="text-[10px] px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 mono">${escapeHtml(p.uid || 'UID')}</span>
-                    ${isMe ? '<span class="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 mono">我方</span>' : (p.isDemoSeed ? '<span class="text-[9px] px-1.5 py-0.2 rounded bg-slate-700 text-slate-300 mono">演示对手</span>' : '<span class="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 mono">真人玩家</span>')}
+                    ${isMe ? '<span class="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 mono">我方</span>' : (p.isDemoSeed ? '<span class="text-[9px] px-1.5 py-0.2 rounded bg-slate-700 text-slate-300 mono">AI 指挥官</span>' : '<span class="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 mono">真人玩家</span>')}
                   </div>
                   <div class="text-[10px] text-slate-400 mono truncate">势力: ${escapeHtml(p.factionName || '星际同盟')} · ${isMe || (GameState.playerSearchQuery || '').trim() ? `基地: ${escapeHtml(p.baseName)} ${escapeHtml(p.coords)}` : '🔒 坐标隐蔽 (需输入姓名或UID搜索定位)'}</div>
                 </div>
@@ -7087,6 +7497,10 @@
           </div>
         `;
       }).join('');
+      const baseGridEl = document.getElementById('myBaseDefenseGrid');
+      if (baseGridEl) baseGridEl.innerHTML = cardsHtml;
+      const mGrid = document.getElementById('modalBaseDefenseGrid');
+      if (mGrid) mGrid.innerHTML = cardsHtml;
     }
 
     function renderInspectedPlayerBase(allowDirectSelect = true) {
@@ -7356,7 +7770,7 @@
           showToast(`🏰 建造完工：【${done.name} Lv.${done.targetLv}】已上线！`, 'emerald');
           saveToStorage();
           syncCurrentCommanderToGlobalRegistry();
-          if (!document.getElementById('view-players').classList.contains('hidden')) renderPlayersView();
+          if (!document.getElementById('view-players').classList.contains('hidden')) safeRender('players', renderPlayersView);
         } else {
           const remTxt = `剩余 ${Math.ceil((GameState.baseBuildQueue.finishAt - Date.now()) / 1000)}s`;
           const qEta = document.getElementById('baseBuildQueueEta');
@@ -7387,7 +7801,14 @@
             GameState.resources.metal += job.metalReward;
             GameState.resources.crystal += job.crystalReward;
             GameState.resources.deut += job.deutReward;
-            SoundFX.play('install');
+            SoundFX.playLayered('coin');
+            const mCanv = document.getElementById('starmapCanvas');
+            if (mCanv) {
+              const mr = mCanv.getBoundingClientRect();
+              flyResourceIcons(mr.left + mr.width * 0.4, mr.top + mr.height * 0.4, 'resMetal', '⚙️', 5);
+              flyResourceIcons(mr.left + mr.width * 0.4, mr.top + mr.height * 0.4, 'resCrystal', '💎', 4);
+              floatText(mr.left + mr.width * 0.4, mr.top + mr.height * 0.35, `+${job.metalReward}⚙️ +${job.crystalReward}💎`, '#34d399', '14px');
+            }
             addLog(`⛏️ 工程采矿船满载归航！从【${job.sysName}】小行星带采回 ⚙️+${job.metalReward} 💎+${job.crystalReward} 🧪+${job.deutReward}！`, 'good');
             showToast(`⛏️ 采矿归航：+⚙️${job.metalReward} +💎${job.crystalReward} +🧪${job.deutReward}`, 'emerald');
             renderTopBarAndSidebar();
@@ -7430,8 +7851,10 @@
       // AI Lords dynamic growth
       GameState.aiLords.forEach(l => {
         if (!l.sanctioned && !l.isVassal) {
-          l.fleetPower += Math.round(65 + Math.random() * 85);
-          l.economyScore += Math.round(45 + Math.random() * 55);
+          const playerPow = Math.max(800, getPlayerTotalFleetPower());
+          const catchupFactor = l.fleetPower > playerPow * 1.6 ? 0.35 : 1.0;
+          l.fleetPower += Math.round((18 + Math.random() * 24) * catchupFactor);
+          l.economyScore += Math.round((15 + Math.random() * 20) * catchupFactor);
         } else {
           l.fleetPower = Math.max(600, l.fleetPower - 15);
         }
@@ -7468,10 +7891,10 @@
       renderTopBarAndSidebar();
       drawStarmap();
       syncWithCloudLeaderboard(true).then(() => {
-        if (!document.getElementById('view-players').classList.contains('hidden')) renderPlayersView();
+        if (!document.getElementById('view-players').classList.contains('hidden')) safeRender('players', renderPlayersView);
       });
       if (!document.getElementById('view-players').classList.contains('hidden')) {
-        renderPlayersView();
+        safeRender('players', renderPlayersView);
       }
       saveToStorage();
     }
@@ -7518,10 +7941,25 @@
       const gainC = Math.round(inc.crystal * 0.25 * cycles);
       const gainD = Math.round(inc.deut * 0.25 * cycles);
       const gainCmp = Math.round(inc.compute * 0.2 * cycles);
-      GameState.resources.metal += gainM;
-      GameState.resources.crystal += gainC;
-      GameState.resources.deut += gainD;
-      GameState.resources.compute += gainCmp;
+      const mins = Math.floor(cappedSec / 60);
+      const secs = cappedSec % 60;
+      window.__pendingOfflineRewards = { gainM, gainC, gainD, gainCmp, mins, secs };
+      setTimeout(() => {
+        const modal = document.getElementById('offlineWelcomeModal');
+        const durEl = document.getElementById('offlineDurationText');
+        const gridEl = document.getElementById('offlineRewardsGrid');
+        if (modal && durEl && gridEl && window.__pendingOfflineRewards) {
+          const r = window.__pendingOfflineRewards;
+          durEl.textContent = `你离线了 ${r.mins} 分 ${r.secs} 秒，母星采矿与反应堆持续产出：`;
+          gridEl.innerHTML = `
+            <div class="p-2 rounded bg-slate-900 text-slate-200">⚙️ 金属 <strong class="text-emerald-300">+${r.gainM}</strong></div>
+            <div class="p-2 rounded bg-slate-900 text-cyan-200">💎 晶体 <strong class="text-emerald-300">+${r.gainC}</strong></div>
+            <div class="p-2 rounded bg-slate-900 text-emerald-200">🧪 重氢 <strong class="text-emerald-300">+${r.gainD}</strong></div>
+            <div class="p-2 rounded bg-slate-900 text-amber-200">🧠 算力 <strong class="text-emerald-300">+${r.gainCmp}</strong></div>
+          `;
+          modal.classList.remove('hidden');
+        }
+      }, 650);
       if (GameState.baseBuildQueue && now >= GameState.baseBuildQueue.finishAt) {
         const done = GameState.baseBuildQueue;
         GameState.baseBuildQueue = null;
@@ -7530,15 +7968,25 @@
         addLog(`🏰 离线期间建造完成：【${done.name}】已升至 Lv.${done.targetLv}！`, 'good');
       }
       GameState.lastSavedAt = now;
-      const mins = Math.floor(cappedSec / 60);
-      const secs = cappedSec % 60;
       addLog(`🌙 【离线后台收益结算】（离线 ${mins}分${secs}秒）：⚙️+${gainM} 💎+${gainC} 🧪+${gainD} 🧠+${gainCmp}`, 'good');
       setTimeout(() => showToast(`🌙 离线后台收益：⚙️+${gainM} 💎+${gainC} 🧪+${gainD}`, 'emerald'), 800);
     }
 
+    function safeRender(label, fn) {
+      try {
+        return fn();
+      } catch (err) {
+        console.warn('[safeRender]', label, err);
+        return undefined;
+      }
+    }
+
     function saveToStorage() {
       try {
+        GameState.saveVersion = 2;
         GameState.lastSavedAt = Date.now();
+        if (Array.isArray(GameState.logs) && GameState.logs.length > 60) GameState.logs.length = 60;
+        if (Array.isArray(GameState.battleHistory) && GameState.battleHistory.length > 30) GameState.battleHistory.length = 30;
         localStorage.setItem(SAVE_KEY, JSON.stringify(GameState));
         if (GameState.commander?.registered && GameState.commander?.name) {
           const key = GameState.commander.name.toLowerCase();
@@ -8018,7 +8466,7 @@
             }
           }
           GameState.designer.grid = cleaned;
-          renderDesignerAll();
+          safeRender('designer', renderDesignerAll);
         });
       });
 
@@ -8138,7 +8586,7 @@
             GameState.designer.aiTarget = bp.aiTarget;
             GameState.designer.grid = structuredClone(bp.grid);
             SoundFX.play('click');
-            renderDesignerAll();
+            safeRender('designer', renderDesignerAll);
             showToast(`已载入蓝图：${bp.name}`, 'cyan');
           }
           return;
@@ -8166,17 +8614,83 @@
         const presetKey = document.getElementById('simEnemyPresetSelect').value;
         const preset = createEnemyPresetFleet(presetKey, 1.0);
         startCombatSimulation({
-          title: `战术演练：迎战${preset.title}`,
+          title: `模拟演习：迎战${preset.title}`,
           environment: 'normal',
           targetSystemId: null,
+          targetPlayerId: null,
+          isPlayerLootRaid: false,
+          isSimulationSpar: true,
           isCrisisBattle: false,
-          enemyShips: enemyShipsList
+          enemyShips: preset.ships
         });
       });
 
       document.getElementById('btnCombatSpeed').addEventListener('click', (e) => {
         CombatSim.speedMult = CombatSim.speedMult === 1 ? 2 : (CombatSim.speedMult === 2 ? 4 : 1);
         e.currentTarget.textContent = `速度: ${CombatSim.speedMult}x`;
+      });
+
+      document.getElementById('btnSpeedUpBaseBuild')?.addEventListener('click', () => {
+        if (!GameState.baseBuildQueue) return;
+        if (GameState.resources.darkMatter < 15) {
+          showToast('暗物质不足（需要 🌌15）！', 'red');
+          return;
+        }
+        GameState.resources.darkMatter -= 15;
+        const done = GameState.baseBuildQueue;
+        GameState.baseBuildQueue = null;
+        if (!GameState.baseDefenses) GameState.baseDefenses = { turret: 1, shield: 1, droneDock: 0, antimatter: 0 };
+        GameState.baseDefenses[done.id] = done.targetLv;
+        SoundFX.play('relic');
+        saveToStorage();
+        syncCurrentCommanderToGlobalRegistry();
+        renderTopBarAndSidebar();
+        renderMyBaseArmamentPanel(true);
+        showToast(`⚡ 暗物质加速成功！【${done.name} Lv.${done.targetLv}】立即完工！`, 'emerald');
+      });
+
+      document.getElementById('btnShareBlueprintCode')?.addEventListener('click', () => {
+        try {
+          const payload = {
+            name: GameState.designer.name || '自定义战舰',
+            hullId: GameState.designer.hullId || 'frigate',
+            aiRange: GameState.designer.aiRange || 'brawl',
+            aiTarget: GameState.designer.aiTarget || 'weapons',
+            grid: GameState.designer.grid || {}
+          };
+          const code = 'SF-BP-' + btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+          if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).catch(() => {});
+          showToast('📤 已复制战舰蓝图分享码（SF-BP-...），发送给好友即可一键导入试打！', 'emerald');
+        } catch (e) { showToast('生成蓝图码失败', 'red'); }
+      });
+      document.getElementById('btnImportBlueprintCode')?.addEventListener('click', () => {
+        document.getElementById('bpImportModal')?.classList.remove('hidden');
+      });
+      document.getElementById('btnCloseBpImportModal')?.addEventListener('click', () => {
+        document.getElementById('bpImportModal')?.classList.add('hidden');
+      });
+      document.getElementById('btnConfirmBpImport')?.addEventListener('click', () => {
+        const raw = (document.getElementById('bpImportCodeInput')?.value || '').trim();
+        if (!raw.startsWith('SF-BP-')) { showToast('请输入以 SF-BP- 开头的有效蓝图码！', 'red'); return; }
+        try {
+          const parsed = JSON.parse(decodeURIComponent(escape(atob(raw.slice(6)))));
+          if (!parsed || !parsed.hullId || !parsed.grid) throw new Error('bad bp');
+          GameState.designer.hullId = HULL_SPECS[parsed.hullId] ? parsed.hullId : 'frigate';
+          GameState.designer.name = `[分享] ${String(parsed.name || '战舰').slice(0, 18)}`;
+          GameState.designer.aiRange = parsed.aiRange || 'skirmish';
+          GameState.designer.aiTarget = parsed.aiTarget || 'shield_low';
+          GameState.designer.grid = parsed.grid;
+          renderDesignerAll();
+          document.getElementById('bpImportModal')?.classList.add('hidden');
+          SoundFX.play('relic');
+          showToast(`📥 成功导入蓝图【${GameState.designer.name}】！`, 'emerald');
+        } catch (e) { showToast('蓝图分享码解析失败，请检查是否完整复制', 'red'); }
+      });
+
+      document.getElementById('btnApplyCombatAdvice')?.addEventListener('click', () => {
+        switchView('designer');
+        document.getElementById('btnAutoFillBlueprint')?.click();
+        showToast('🔧 已为你切换至设计器并自动应用均衡高破盾配装，可直接建造！', 'emerald');
       });
 
       document.getElementById('btnReplayCombat').addEventListener('click', () => {
@@ -8208,7 +8722,7 @@
         GameState.relicInventory = keep;
         GameState.resources.darkMatter += gained;
         SoundFX.play('install');
-        renderRelicView();
+        safeRender('relic', renderRelicView);
         renderTopBarAndSidebar();
         showToast(`分解完成！回收 +${gained} 暗物质`, 'emerald');
       });
@@ -8228,7 +8742,7 @@
         SoundFX.play('install');
         addLog('🤝 我方正式签署《星穹共同防御公约》，成为星际联盟核心成员国！', 'dip');
         showToast('已加入「星穹公约联盟」！', 'emerald');
-        renderDiplomacyView();
+        safeRender('diplomacy', renderDiplomacyView);
         renderTopBarAndSidebar();
       });
 
@@ -8241,7 +8755,7 @@
           SoundFX.play('relic');
           addLog(`👑 联盟最高理事会表决通过（${votes}/5票支持），我方正式当选【联盟最高指挥官】！`, 'dip');
           showToast('恭喜当选「联盟最高指挥官」！解锁集结令与战利品分配权', 'emerald');
-          renderDiplomacyView();
+          safeRender('diplomacy', renderDiplomacyView);
           renderTopBarAndSidebar();
         } else {
           SoundFX.play('error');
@@ -8265,7 +8779,7 @@
         SoundFX.play('explosion');
         addLog(`🗡️ 合纵连横大戏：我方联合暗影议会与弱小领主对榜一霸主【${targetLord.name}】发动突袭背刺，重创其 38% 主力舰队并瓜分 ⚙️260 💎180 🌌50！`, 'dip');
         showToast(`联合背刺成功！【${targetLord.name}】主力舰队遭重创`, 'emerald');
-        renderDiplomacyView();
+        safeRender('diplomacy', renderDiplomacyView);
         renderTopBarAndSidebar();
       });
 
@@ -8314,7 +8828,7 @@
           SoundFX.play('install');
           addLog(`🚫 联盟最高制裁令：已对强权【${rival.name}】实施全面战略禁运，冻结其舰队扩军与贸易产出！`, 'dip');
           showToast(`已对【${rival.name}】实施外交制裁！`, 'amber');
-          renderDiplomacyView();
+          safeRender('diplomacy', renderDiplomacyView);
         }
       });
 
@@ -8358,7 +8872,7 @@
           SoundFX.play('relic');
           addLog(`📜 外交突破：与【${lord.name}】正式签署《星际自由通商与共同防御条约》，获得通商红利 ⚙️+140 💎+110 及联盟选票支持！`, 'dip');
           showToast(`已与【${lord.name}】缔结战略通商条约！`, 'emerald');
-          renderDiplomacyView();
+          safeRender('diplomacy', renderDiplomacyView);
           renderTopBarAndSidebar();
           return;
         }
@@ -8381,7 +8895,7 @@
           }
           SoundFX.play('install');
           addLog(`🎁 向【${lord.name}】馈赠 120 晶体，友好度提升至 ${lord.relation} ${lord.votesForPlayer ? '(已承诺支持我方竞选最高指挥官!)' : ''}`, 'dip');
-          renderDiplomacyView();
+          safeRender('diplomacy', renderDiplomacyView);
           renderTopBarAndSidebar();
           return;
         }
@@ -8403,7 +8917,7 @@
           SoundFX.play('explosion');
           addLog(`🕵️ 代理人暗战：我方秘密资助【${lord.name}】突袭【${targetRival.name}】边境船坞，削减敌方 360 舰队战力！`, 'dip');
           showToast(`代理人战争生效：【${targetRival.name}】战力 -360`, 'amber');
-          renderDiplomacyView();
+          safeRender('diplomacy', renderDiplomacyView);
           renderTopBarAndSidebar();
         }
       });
@@ -8444,7 +8958,7 @@
           SoundFX.play('relic');
           saveToStorage();
           renderTopBarAndSidebar();
-          renderEmpireView();
+          safeRender('empire', renderEmpireView);
           showToast(`🎖️ 成功招募【${off.name}】！`, 'emerald');
           return;
         }
@@ -8465,7 +8979,7 @@
             SoundFX.play('install');
           }
           saveToStorage();
-          renderEmpireView();
+          safeRender('empire', renderEmpireView);
         }
       });
 
@@ -8498,7 +9012,7 @@
             ship.stats = evaluateShipBlueprint(bp.hullId, bp.grid, bp.aiRange, bp.aiTarget);
           }
         });
-        renderEmpireView();
+        safeRender('empire', renderEmpireView);
         renderTopBarAndSidebar();
         saveToStorage();
       });
@@ -8512,7 +9026,7 @@
               ? 'rank-tab-btn cyber-btn px-2 py-0.5 rounded'
               : 'rank-tab-btn bg-slate-900 border border-slate-700 px-2 py-0.5 rounded text-slate-300';
           });
-          renderEmpireView();
+          safeRender('empire', renderEmpireView);
         });
       });
 
@@ -8560,7 +9074,7 @@
         if (previewEl) previewEl.innerHTML = renderAvatarContent(editTempAvatar, editTempCustomAvatarDataUrl);
         if (clearBtn) clearBtn.classList.toggle('hidden', !editTempCustomAvatarDataUrl);
         if (gridEl) {
-          gridEl.innerHTML = AVATAR_CHOICES.map(av => {
+          gridEl.innerHTML = COMMANDER_AVATARS.map(a => a.icon).map(av => {
             const active = !editTempCustomAvatarDataUrl && editTempAvatar === av;
             return `<button type="button" data-edit-av="${av}" class="w-8 h-8 rounded-lg border text-base flex items-center justify-center transition ${
               active ? 'bg-cyan-500/30 border-cyan-300 scale-105' : 'bg-slate-900 border-slate-700 hover:border-cyan-400'
@@ -8659,12 +9173,12 @@
         saveToStorage();
         syncCurrentCommanderToGlobalRegistry();
         syncWithCloudLeaderboard(true).then(() => {
-          renderPlayersView();
+          safeRender('players', renderPlayersView);
           renderTopBarAndSidebar();
         });
         renderTopBarAndSidebar();
-        renderPlayersView();
-        renderEmpireView();
+        safeRender('players', renderPlayersView);
+        safeRender('empire', renderEmpireView);
         document.getElementById('quickEditProfilePanel').classList.add('hidden');
         openCommanderSetupModal(false, 0);
         SoundFX.play('relic');
@@ -8885,7 +9399,7 @@
         } else {
           showToast(`未找到名字包含「${q}」的玩家`, 'amber');
         }
-        renderPlayersView();
+        safeRender('players', renderPlayersView);
       };
 
       document.getElementById('btnSearchPlayerByName').addEventListener('click', doPlayerSearch);
@@ -8895,7 +9409,7 @@
       document.getElementById('btnResetPlayerSearch').addEventListener('click', () => {
         document.getElementById('playerSearchInput').value = '';
         GameState.playerSearchQuery = '';
-        renderPlayersView();
+        safeRender('players', renderPlayersView);
       });
       document.getElementById('btnSwitchAccount').addEventListener('click', () => {
         openCommanderSetupModal(true);
@@ -8910,7 +9424,7 @@
               ? 'psort-btn cyber-btn px-2 py-0.5 rounded'
               : 'psort-btn bg-slate-900 border border-slate-700 px-2 py-0.5 rounded text-slate-300';
           });
-          renderPlayersView();
+          safeRender('players', renderPlayersView);
         });
       });
 
@@ -8965,7 +9479,7 @@
           SoundFX.play('relic');
           addLog(`📜 铁血威慑生效！玩家【${target.name}】慑于我方强大的舰队实力(${myPower} vs ${target.fleetPower})，接受最后通牒献上 ⚙️${tributeM} 💎${tributeC} 并俯首称臣！`, 'good');
           showToast(`威慑成功！【${target.name}】已献上贡品并臣服`, 'emerald');
-          renderPlayersView();
+          safeRender('players', renderPlayersView);
           renderTopBarAndSidebar();
         } else {
           SoundFX.play('error');
@@ -9017,7 +9531,7 @@
         saveToStorage();
         renderTopBarAndSidebar();
         renderMyBaseArmamentPanel(true);
-        if (!document.getElementById('view-players').classList.contains('hidden')) renderPlayersView();
+        if (!document.getElementById('view-players').classList.contains('hidden')) safeRender('players', renderPlayersView);
         addLog(`🔨 母星工程队列启动：正在建造【${def.name} Lv.${lv + 1}】，预计耗时 ${buildSec} 秒。`, 'info');
         showToast(`🔨 开始建造【${def.name} Lv.${lv + 1}】，预计 ${buildSec} 秒完成！`, 'cyan');
       };
@@ -9056,7 +9570,7 @@
         SoundFX.play('install');
         saveToStorage();
         renderTopBarAndSidebar();
-        renderPlayersView();
+        safeRender('players', renderPlayersView);
         addLog(`🔨 母星工程队列启动：正在建造【${def.name} Lv.${lv + 1}】，预计耗时 ${buildSec} 秒（支持离线后台继续建造）。`, 'info');
         showToast(`🔨 开始建造【${def.name} Lv.${lv + 1}】，预计 ${buildSec} 秒完成！`, 'cyan');
       });
@@ -9304,7 +9818,7 @@
         SoundFX.play('explosion');
         addLog(`💣 特工潜入成功：已瘫痪玩家【${target.name}】母星基地的行星偏折护盾，此时发起进攻敌方战力降低 25%！`, 'combat');
         showToast(`成功瘫痪【${target.name}】基地护盾！`, 'emerald');
-        renderPlayersView();
+        safeRender('players', renderPlayersView);
         renderTopBarAndSidebar();
       });
 
@@ -9323,7 +9837,7 @@
         SoundFX.play('install');
         addLog(`🎁 玩家外交：向玩家【${target.name}】的基地发送 100 晶体补给舰，双方友好度升至 ${target.relation}！`, 'dip');
         showToast(`已向【${target.name}】赠送晶体，友好度+25！`, 'emerald');
-        renderPlayersView();
+        safeRender('players', renderPlayersView);
         renderTopBarAndSidebar();
       });
 
@@ -9375,6 +9889,25 @@
         const dr = document.getElementById('leftFleetDrawer');
         if (dr) { dr.classList.add('hidden'); dr.classList.remove('flex'); }
       });
+      document.getElementById('btnClaimOfflineRewards')?.addEventListener('click', (e) => {
+        const r = window.__pendingOfflineRewards;
+        if (r) {
+          GameState.resources.metal += r.gainM;
+          GameState.resources.crystal += r.gainC;
+          GameState.resources.deut += r.gainD;
+          GameState.resources.compute += r.gainCmp;
+          window.__pendingOfflineRewards = null;
+          const br = e.currentTarget.getBoundingClientRect();
+          flyResourceIcons(br.left + br.width / 2, br.top, 'resMetal', '⚙️', 6);
+          flyResourceIcons(br.left + br.width / 2, br.top, 'resCrystal', '💎', 5);
+          SoundFX.playLayered('coin');
+          saveToStorage();
+          renderTopBarAndSidebar();
+          showToast(`🎁 已领取离线收益：⚙️+${r.gainM} 💎+${r.gainC} 🧪+${r.gainD} 🧠+${r.gainCmp}`, 'emerald');
+        }
+        document.getElementById('offlineWelcomeModal')?.classList.add('hidden');
+      });
+
       document.getElementById('btnOpenMailbox')?.addEventListener('click', () => {
         const modal = document.getElementById('mailboxModal');
         const list = document.getElementById('mailboxList');
@@ -9406,7 +9939,7 @@
         GameState.alliance.name = val;
         GameState.alliance.joined = true;
         saveToStorage();
-        renderDiplomacyView();
+        safeRender('diplomacy', renderDiplomacyView);
         renderTopBarAndSidebar();
         showToast(`🏛️ 已创建/更名星际联盟为【${val}】！`, 'emerald');
       });
@@ -9491,7 +10024,7 @@
           SoundFX.play('relic');
           addLog(`🌐 成功导入真实玩家【${peer.avatar || '👨‍🚀'} ${peer.name}】的母星基地【${peer.baseName}】(战力 ${peer.fleetPower})！`, 'good');
           showToast(`已导入真实玩家【${peer.name}】！可立即查看其基地或发起对战`, 'emerald');
-          renderPlayersView();
+          safeRender('players', renderPlayersView);
         } catch (err) {
           SoundFX.play('error');
           showToast('联机码解析失败，请确认复制完整！', 'red');
@@ -9503,8 +10036,8 @@
         SoundFX.play('click');
         syncCurrentCommanderToGlobalRegistry();
         await syncWithCloudLeaderboard(true);
-        renderPlayersView();
-        renderEmpireView();
+        safeRender('players', renderPlayersView);
+        safeRender('empire', renderEmpireView);
         renderTopBarAndSidebar();
         showToast('☁️ 已与云端服务器同步最新全服玩家排行榜！', 'emerald');
       });
@@ -9526,7 +10059,7 @@
         stopFirebaseRealtimeStream();
         document.getElementById('customCloudConfigBox').classList.add('hidden');
         await syncWithCloudLeaderboard(true);
-        renderPlayersView();
+        safeRender('players', renderPlayersView);
         showToast('已更新云端服务器地址并完成同步！', 'emerald');
       });
 
@@ -9560,7 +10093,7 @@
       if (starforgeBroadcast) {
         starforgeBroadcast.onmessage = () => {
           if (!document.getElementById('view-players').classList.contains('hidden')) {
-            renderPlayersView();
+            safeRender('players', renderPlayersView);
           }
           renderTopBarAndSidebar();
         };
@@ -9570,7 +10103,7 @@
       window.addEventListener('storage', (e) => {
         if (e.key === GLOBAL_PLAYERS_KEY) {
           if (!document.getElementById('view-players').classList.contains('hidden')) {
-            renderPlayersView();
+            safeRender('players', renderPlayersView);
           }
           renderTopBarAndSidebar();
         }
@@ -9793,7 +10326,7 @@
       // - New players start with Prologue -> Tutorial -> Step 1 Name -> Step 2 Faction -> Step 3 Avatar/Upload -> Step 4 UID
       openCommanderSetupModal(false, 0);
       syncWithCloudLeaderboard(true).then(() => {
-        if (!document.getElementById('view-players').classList.contains('hidden')) renderPlayersView();
+        if (!document.getElementById('view-players').classList.contains('hidden')) safeRender('players', renderPlayersView);
       });
       if (cloudSyncIntervalId) clearInterval(cloudSyncIntervalId);
       cloudSyncIntervalId = setInterval(() => {
