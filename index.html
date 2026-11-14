@@ -237,9 +237,7 @@
         <span id="turnCounter" class="text-cyan-300 font-bold">3042.01.01</span>
       </div>
       <button id="btnSpeedPause" class="cyber-btn px-2 py-1 rounded text-xs mono" title="战术暂停实时流逝">⏸ 暂停</button>
-      <button id="btnSpeed1x" class="cyber-btn-amber px-2 py-1 rounded text-xs mono font-bold" title="1倍速实时推进">▶ 1x实时</button>
-      <button id="btnSpeed2x" class="cyber-btn px-2 py-1 rounded text-xs mono" title="2倍速实时推进">⏩ 2x</button>
-      <button id="btnNextTurn" class="cyber-btn px-2 py-1 rounded text-xs font-semibold mono" title="4倍速极速推进时间流">⚡ 4x极速</button>
+      <button id="btnSpeed1x" class="cyber-btn-amber px-2 py-1 rounded text-xs mono font-bold" title="统一实时服务器时钟推进">▶ 实时同步</button>
       <select id="langSelectTop" class="bg-slate-900 border border-cyan-500/50 rounded px-2 py-1 text-xs text-cyan-200 mono focus:outline-none" title="切換語言 / Language / 言語">
         <option value="zh">🌐 中文</option>
         <option value="en">🌐 EN</option>
@@ -296,7 +294,10 @@
         <div class="border-t border-slate-800 pt-2.5">
           <div class="flex items-center justify-between mb-1">
             <span class="text-xs font-semibold text-cyan-300">🚀 帝国舰队编组</span>
-            <span id="fleetPowerBadge" class="text-xs mono text-amber-300 font-bold">战力 0</span>
+            <div class="text-right leading-tight">
+              <span id="fleetPowerBadge" class="text-xs mono text-amber-300 font-bold block">战力 0</span>
+              <span id="fleetUpkeepBadge" class="text-[10px] mono text-rose-300">维护: -0⚙️ -0🧪</span>
+            </div>
           </div>
           <div class="flex items-center gap-1 mb-1.5">
             <select id="activeSquadronSelect" class="flex-1 min-w-0 bg-slate-900 border border-cyan-500/40 rounded px-1.5 py-1 text-[11px] text-cyan-200 font-medium">
@@ -399,6 +400,7 @@
           <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 shrink-0">
             <button id="btnEnterHomeBase" class="cyber-btn-amber px-3.5 py-2 rounded-lg text-xs font-extrabold shadow-lg">🏰 进入基地内部建造</button>
             <button id="btnDispatchMiner" class="cyber-btn px-3 py-2 rounded-lg text-xs font-bold">⛏️ 派遣矿船采矿 (<span id="minerCountBadge">1/1</span>)</button>
+            <select id="starmapAttackSquadronSelect" class="bg-slate-900 border border-amber-500/50 rounded-lg px-2 py-2 text-xs text-amber-200 font-bold" title="选择本次出击的舰队编组"></select>
             <button id="btnAttackSystem" class="cyber-btn-red px-4 py-2 rounded-lg text-xs font-extrabold shadow-lg">⚔️ 舰队出征 / 夺取星系</button>
             <button id="btnExploreRelic" class="cyber-btn-amber px-3 py-2 rounded-lg text-xs font-semibold">🔍 勘探遗迹盲盒</button>
             <button id="btnRallyAttack" class="cyber-btn px-2.5 py-2 rounded-lg text-xs font-semibold" title="以联盟最高指挥官身份号召盟友协同进攻">📣 联盟集结</button>
@@ -718,6 +720,7 @@
                 <button id="btnTacOverdrive" class="cyber-btn-red px-2.5 py-1 rounded text-[11px] font-bold mono" title="全舰武器射速+50%持续6秒">🔥 全舰超频齐射 (CD:就绪)</button>
                 <button id="btnTacShieldBoost" class="cyber-btn px-2.5 py-1 rounded text-[11px] font-bold mono" title="立即为全舰恢复220点偏折护盾">🛡️ 紧急护盾充能 (CD:就绪)</button>
                 <button id="btnTacCoolant" class="cyber-btn-amber px-2.5 py-1 rounded text-[11px] font-bold mono" title="立即清空所有舰船热量并解除过热停火">❄️ 液氦急速排热 (CD:就绪)</button>
+                <button id="btnSkipWatchCombat" class="cyber-btn px-2.5 py-1 rounded text-[11px] font-bold mono" title="不想看战斗过程可直接后台结算并弹出战报">⚡ 跳过观战看战报</button>
               </div>
             </div>
             <!-- Live Weapon & Environment Legend -->
@@ -770,6 +773,17 @@
                 <div class="text-slate-500">点击上方「启动模拟战推演」或在星图向敌方星系发起进攻以生成战报日志。</div>
               </div>
             </div>
+          </div>
+        </div>
+      
+        <!-- Battle Report History Archive -->
+        <div class="m-2.5 mt-0 bg-slate-950/90 border border-cyan-500/30 rounded-lg p-2.5 space-y-1.5 shrink-0">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-cyan-300">📜 战报历史档案（自动留存最近 30 场交战记录）</span>
+            <span id="battleHistoryCountBadge" class="text-[10px] mono text-slate-400">0 场记录</span>
+          </div>
+          <div id="battleHistoryList" class="max-h-32 overflow-y-auto space-y-1 text-[11px] mono">
+            <div class="text-slate-500 py-2 text-center">暂无历史战报，出征交战后将自动归档</div>
           </div>
         </div>
       </section>
@@ -1101,8 +1115,12 @@
               <!-- Own Base Armament & Defense Upgrade Panel (Visible when inspecting own base) -->
               <div id="myBaseArmamentPanel" class="hidden mt-2 p-2.5 rounded-lg bg-slate-900/95 border border-amber-500/45 space-y-2">
                 <div class="flex items-center justify-between">
-                  <span class="text-xs font-bold text-amber-300">🏰 武装我的母星基地（升级炮台/护盾/无人机坞，抵御其他玩家掠夺）</span>
+                  <span class="text-xs font-bold text-amber-300">🏰 武装我的母星基地（需耗时建造 · 抵御其他玩家掠夺）</span>
                   <span id="myBaseDefensePowerBadge" class="text-[11px] mono text-emerald-300 font-bold">基地防卫战力: 700</span>
+                </div>
+                <div id="baseBuildQueueBanner" class="hidden p-2 rounded bg-cyan-950/60 border border-cyan-400/50 text-[11px] text-cyan-200 mono flex items-center justify-between">
+                  <span id="baseBuildQueueText">🔨 正在建造...</span>
+                  <span id="baseBuildQueueEta" class="text-amber-300 font-bold">剩余 0s</span>
                 </div>
                 <div id="myBaseDefenseGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                   <!-- Populated by JS -->
@@ -1652,7 +1670,7 @@
         id: 'corvette',
         name: '隐形突击艇',
         size: 5,
-        baseHp: 390,
+        baseHp: 2450,
         baseSpeed: 122,
         baseEvasion: 46,
         baseCost: { metal: 55, crystal: 25, deut: 10 },
@@ -1668,7 +1686,7 @@
         id: 'frigate',
         name: '轻型护卫舰',
         size: 5,
-        baseHp: 550,
+        baseHp: 1380,
         baseSpeed: 95,
         baseEvasion: 34,
         baseCost: { metal: 80, crystal: 40, deut: 20 },
@@ -1684,7 +1702,7 @@
         id: 'destroyer',
         name: '重装驱逐舰',
         size: 6,
-        baseHp: 860,
+        baseHp: 2150,
         baseSpeed: 82,
         baseEvasion: 26,
         baseCost: { metal: 130, crystal: 70, deut: 35 },
@@ -1701,7 +1719,7 @@
         id: 'cruiser',
         name: '主力巡洋舰',
         size: 7,
-        baseHp: 1150,
+        baseHp: 2850,
         baseSpeed: 72,
         baseEvasion: 20,
         baseCost: { metal: 180, crystal: 95, deut: 50 },
@@ -1719,7 +1737,7 @@
         id: 'carrier',
         name: '无人机母舰',
         size: 8,
-        baseHp: 1950,
+        baseHp: 4800,
         baseSpeed: 56,
         baseEvasion: 14,
         baseCost: { metal: 310, crystal: 185, deut: 95 },
@@ -1756,7 +1774,7 @@
         id: 'titan',
         name: '泰坦级星穹堡垒',
         size: 9,
-        baseHp: 3800,
+        baseHp: 9200,
         baseSpeed: 42,
         baseEvasion: 6,
         baseCost: { metal: 560, crystal: 340, deut: 180 },
@@ -1776,7 +1794,7 @@
         id: 'battleship',
         name: '无畏战列舰',
         size: 9,
-        baseHp: 2400,
+        baseHp: 5900,
         baseSpeed: 50,
         baseEvasion: 10,
         baseCost: { metal: 380, crystal: 220, deut: 120 },
@@ -2632,6 +2650,9 @@
         relicCores: 3
       },
       baseDefenses: { turret: 1, shield: 1, droneDock: 0, antimatter: 0 },
+      baseBuildQueue: null,
+      battleHistory: [],
+      lastSavedAt: Date.now(),
       recruitedOfficers: [],
       activeOfficers: [],
       techLevels: {
@@ -3242,6 +3263,7 @@
       } else if (viewId === 'combat') {
         resizeCombatCanvas();
         drawCombatFrame();
+        renderBattleHistoryList();
       } else if (viewId === 'relic') {
         renderRelicView();
       } else if (viewId === 'diplomacy') {
@@ -3281,12 +3303,32 @@
       metal += totalVassals * 45;
       crystal += totalVassals * 35;
 
+      let upkeepMetal = 0;
+      let upkeepDeut = 0;
+      (GameState.fleet || []).forEach(sh => {
+        if (sh.isBorrowedAlly) return;
+        const hid = sh.hullId || 'frigate';
+        if (hid === 'titan' || hid === 'battleship' || hid === 'carrier') {
+          upkeepMetal += 16; upkeepDeut += 9;
+        } else if (hid === 'cruiser' || hid === 'artillery') {
+          upkeepMetal += 10; upkeepDeut += 5;
+        } else if (hid === 'destroyer') {
+          upkeepMetal += 7; upkeepDeut += 4;
+        } else {
+          upkeepMetal += 4; upkeepDeut += 2;
+        }
+      });
+      const offComputeMult = 1 + (typeof getActiveOfficerBonus === 'function' ? getActiveOfficerBonus('compute') : 0);
+      const grossMetal = Math.round(metal * techEco);
+      const grossDeut = Math.round(deut * techEco);
       return {
-        metal: Math.round(metal * techEco),
+        metal: grossMetal - upkeepMetal,
         crystal: Math.round(crystal * techEco),
-        deut: Math.round(deut * techEco),
+        deut: grossDeut - upkeepDeut,
         dark: Math.round(dark),
-        compute: Math.round(compute),
+        compute: Math.round(compute * offComputeMult),
+        upkeepMetal,
+        upkeepDeut,
         ownedCount: owned.length
       };
     }
@@ -3327,7 +3369,9 @@
 
       const inc = calculateEmpireIncomes();
       document.getElementById('resMetal').textContent = GameState.resources.metal;
-      document.getElementById('incMetal').textContent = `+${inc.metal}`;
+      document.getElementById('incMetal').textContent = `${inc.metal >= 0 ? '+' : ''}${inc.metal}`;
+      const upkeepEl = document.getElementById('fleetUpkeepBadge');
+      if (upkeepEl) upkeepEl.textContent = `维护: -${inc.upkeepMetal || 0}⚙️ -${inc.upkeepDeut || 0}🧪`;
       document.getElementById('resCrystal').textContent = GameState.resources.crystal;
       document.getElementById('incCrystal').textContent = `+${inc.crystal}`;
       document.getElementById('resDeut').textContent = GameState.resources.deut;
@@ -3368,6 +3412,16 @@
             return `<option value="${escapeHtml(sq.id)}">${escapeHtml(sq.name)} (${cnt}艘)</option>`;
           }).join('');
         sqSel.value = (curSq === 'all' || GameState.squadrons.some(sq => sq.id === curSq)) ? curSq : 'all';
+      }
+      const starmapSqSel = document.getElementById('starmapAttackSquadronSelect');
+      if (starmapSqSel) {
+        const curSq = GameState.activeSquadronId;
+        starmapSqSel.innerHTML = `<option value="all">全部出击 (${GameState.fleet.length}艘)</option>` +
+          GameState.squadrons.map(sq => {
+            const cnt = GameState.fleet.filter(sh => sh.squadronId === sq.id).length;
+            return `<option value="${escapeHtml(sq.id)}">${escapeHtml(sq.name)} (${cnt}艘)</option>`;
+          }).join('');
+        starmapSqSel.value = (curSq === 'all' || GameState.squadrons.some(sq => sq.id === curSq)) ? curSq : 'all';
       }
 
       const visibleShips = GameState.activeSquadronId === 'all'
@@ -4669,7 +4723,7 @@
 
     function stepCombatTick() {
       CombatSim.tick++;
-      const dt = 0.05; // 20 ticks = 1.0 second
+      const dt = 0.012; // Epic real-time tactical pace for deliberate micro-control
 
       const aliveAllies = CombatSim.allies.filter(s => s.hp > 0);
       const aliveEnemies = CombatSim.enemies.filter(s => s.hp > 0);
@@ -4981,6 +5035,24 @@
         canvas.width = rect.width;
         canvas.height = rect.height;
       }
+    }
+
+    function renderBattleHistoryList() {
+      const listEl = document.getElementById('battleHistoryList');
+      const badgeEl = document.getElementById('battleHistoryCountBadge');
+      if (!listEl) return;
+      const hist = Array.isArray(GameState.battleHistory) ? GameState.battleHistory : [];
+      if (badgeEl) badgeEl.textContent = `${hist.length} 场记录`;
+      if (hist.length === 0) {
+        listEl.innerHTML = '<div class="text-slate-500 py-2 text-center">暂无历史战报，出征交战后将自动归档</div>';
+        return;
+      }
+      listEl.innerHTML = hist.map(h => `
+        <div class="p-1.5 rounded bg-slate-900/90 border ${h.victory ? 'border-emerald-500/35' : 'border-rose-500/35'} flex flex-wrap items-center justify-between gap-2">
+          <span class="font-bold ${h.victory ? 'text-emerald-300' : 'text-rose-300'}">${h.victory ? '🏆 胜' : '💀 败'} · ${escapeHtml(h.title)}</span>
+          <span class="text-slate-300">输出 ${h.allyDmg} | 承伤 ${h.enemyDmg} | 损 ${h.allyLost} 舰 · 历时 ${h.durationSec}s (${escapeHtml(h.timeStr)})</span>
+        </div>
+      `).join('');
     }
 
     function drawCombatFrame() {
@@ -5349,6 +5421,26 @@
 
     function finishCombatSimulation() {
       CombatSim.running = false;
+      try {
+        if (!Array.isArray(GameState.battleHistory)) GameState.battleHistory = [];
+        const allyDmg = (CombatSim.stats?.ally?.laser || 0) + (CombatSim.stats?.ally?.rail || 0) + (CombatSim.stats?.ally?.missile || 0) + (CombatSim.stats?.ally?.plasma || 0);
+        const enemyDmg = (CombatSim.stats?.enemy?.laser || 0) + (CombatSim.stats?.enemy?.rail || 0) + (CombatSim.stats?.enemy?.missile || 0) + (CombatSim.stats?.enemy?.plasma || 0);
+        const allyLost = (CombatSim.allies || []).filter(a => a.hp <= 0).length;
+        const enemyLost = (CombatSim.enemies || []).filter(e => e.hp <= 0).length;
+        const victory = (CombatSim.enemies || []).every(e => e.hp <= 0);
+        GameState.battleHistory.unshift({
+          title: CombatSim.title || '星域遭遇战',
+          victory,
+          timeStr: new Date().toLocaleTimeString(),
+          durationSec: Math.round((CombatSim.tick || 0) * 0.012),
+          allyDmg,
+          enemyDmg,
+          allyLost,
+          enemyLost
+        });
+        if (GameState.battleHistory.length > 30) GameState.battleHistory.length = 30;
+        renderBattleHistoryList();
+      } catch (e) {}
       const allyAlive = CombatSim.allies.some(s => s.hp > 0);
       const enemyAlive = CombatSim.enemies.some(s => s.hp > 0);
       const badge = document.getElementById('combatResultBadge');
@@ -5951,7 +6043,7 @@
         chapter: '第一章 · 余烬觉醒',
         title: '重铸先驱者星穹母舰',
         desc: '先驱者帝国崩解后，你的母星孤悬于猎户座边缘。前往【舰船网格设计器】，利用反应堆、散热器与武器紧邻排布，激活至少 2 项邻接加成并保存蓝图。',
-        objectiveText: '目标：激活≥2项邻接加成并保存蓝图',
+        objectiveText: '目标：激活≥2项邻接加成并保存蓝图（奖励：⚙️+350 💎+120 助力造舰）',
         targetView: 'designer',
         reward: { metal: 250, crystal: 180, dark: 80 },
         checkComplete: () => GameState.quests.some(q => q.id === 'q_design' && q.done) || GameState.blueprints.some(bp => evaluateShipBlueprint(bp.hullId, bp.grid).adjacencyBonuses.length >= 2)
@@ -6837,6 +6929,21 @@
       panel.classList.toggle('hidden', !isMe);
       if (!isMe) return;
       if (!GameState.baseDefenses) GameState.baseDefenses = { turret: 1, shield: 1, droneDock: 0, antimatter: 0 };
+      const qBanner = document.getElementById('baseBuildQueueBanner');
+      const qText = document.getElementById('baseBuildQueueText');
+      const qEta = document.getElementById('baseBuildQueueEta');
+      if (qBanner && GameState.baseBuildQueue) {
+        const remMs = GameState.baseBuildQueue.finishAt - Date.now();
+        if (remMs > 0) {
+          qBanner.classList.remove('hidden');
+          if (qText) qText.textContent = `🔨 正在建造：${GameState.baseBuildQueue.name} Lv.${GameState.baseBuildQueue.targetLv}`;
+          if (qEta) qEta.textContent = `剩余 ${Math.ceil(remMs / 1000)}s`;
+        } else {
+          qBanner.classList.add('hidden');
+        }
+      } else if (qBanner) {
+        qBanner.classList.add('hidden');
+      }
       const defPow = getMyBaseDefensePower();
       const powEl = document.getElementById('myBaseDefensePowerBadge');
       if (powEl) powEl.textContent = `基地防卫战力: ${defPow}`;
@@ -7087,9 +7194,27 @@
     function stepRealTimeStream() {
       if (GameState.autoSpeed === 0) return;
 
+      if (GameState.baseBuildQueue) {
+        if (Date.now() >= GameState.baseBuildQueue.finishAt) {
+          const done = GameState.baseBuildQueue;
+          GameState.baseBuildQueue = null;
+          if (!GameState.baseDefenses) GameState.baseDefenses = { turret: 1, shield: 1, droneDock: 0, antimatter: 0 };
+          GameState.baseDefenses[done.id] = done.targetLv;
+          SoundFX.play('relic');
+          addLog(`🏰 母星建造完工：【${done.name}】已升级至 Lv.${done.targetLv}！`, 'good');
+          showToast(`🏰 建造完工：【${done.name} Lv.${done.targetLv}】已上线！`, 'emerald');
+          saveToStorage();
+          syncCurrentCommanderToGlobalRegistry();
+          if (!document.getElementById('view-players').classList.contains('hidden')) renderPlayersView();
+        } else {
+          const qEta = document.getElementById('baseBuildQueueEta');
+          if (qEta) qEta.textContent = `剩余 ${Math.ceil((GameState.baseBuildQueue.finishAt - Date.now()) / 1000)}s`;
+        }
+      }
+
       // 1. Advance active Starmap Fleet March smoothly
       if (StarmapMarch.active) {
-        StarmapMarch.progress += 0.045 * GameState.autoSpeed;
+        StarmapMarch.progress += 0.014 * GameState.autoSpeed;
         drawStarmap();
         if (StarmapMarch.progress >= 1) {
           StarmapMarch.active = false;
@@ -7103,7 +7228,7 @@
       if (Array.isArray(GameState.activeMiningJobs) && GameState.activeMiningJobs.length > 0) {
         const remainingJobs = [];
         for (const job of GameState.activeMiningJobs) {
-          job.progress += 0.065 * GameState.autoSpeed;
+          job.progress += 0.009 * GameState.autoSpeed;
           if (job.progress >= 1) {
             GameState.resources.metal += job.metalReward;
             GameState.resources.crystal += job.crystalReward;
@@ -7123,12 +7248,12 @@
 
       // 2. Continuous fractional resource streaming every second (5 subticks = 1.0 sec)
       rtSubTick += GameState.autoSpeed;
-      if (rtSubTick >= 5) {
+      if (rtSubTick >= 15) {
         rtSubTick = 0;
         const inc = calculateEmpireIncomes();
-        GameState.resources.metal += Math.max(1, Math.round(inc.metal / 5));
-        GameState.resources.crystal += Math.max(1, Math.round(inc.crystal / 5));
-        GameState.resources.deut += Math.max(1, Math.round(inc.deut / 5));
+        GameState.resources.metal = Math.max(0, GameState.resources.metal + Math.round(inc.metal / 5));
+        GameState.resources.crystal = Math.max(0, GameState.resources.crystal + Math.round(inc.crystal / 5));
+        GameState.resources.deut = Math.max(0, GameState.resources.deut + Math.round(inc.deut / 5));
         GameState.resources.compute += Math.max(1, Math.round(inc.compute / 5));
         if (GameState.turn % 2 === 0) {
           GameState.resources.darkMatter += Math.max(1, Math.round(inc.dark / 4));
@@ -7203,7 +7328,7 @@
       const dot = document.getElementById('rtClockDot');
       if (dot) dot.classList.toggle('hidden', speed === 0);
 
-      ['btnSpeedPause', 'btnSpeed1x', 'btnSpeed2x', 'btnNextTurn'].forEach((id, idx) => {
+      ['btnSpeedPause', 'btnSpeed1x'].forEach((id, idx) => {
         const el = document.getElementById(id);
         if (!el) return;
         const mapSpeed = [0, 1, 2, 4][idx];
@@ -7224,8 +7349,39 @@
     // 14. LOCAL STORAGE PERSISTENCE
     // =========================================================================
 
+    function applyOfflineBackgroundProgress() {
+      if (!GameState.lastSavedAt || !GameState.commander?.onboardingCompleted) return;
+      const now = Date.now();
+      const elapsedSec = Math.floor((now - GameState.lastSavedAt) / 1000);
+      if (elapsedSec < 15) return;
+      const cappedSec = Math.min(43200, elapsedSec);
+      const cycles = Math.max(1, Math.floor(cappedSec / 12));
+      const inc = calculateEmpireIncomes();
+      const gainM = Math.round(inc.metal * 0.25 * cycles);
+      const gainC = Math.round(inc.crystal * 0.25 * cycles);
+      const gainD = Math.round(inc.deut * 0.25 * cycles);
+      const gainCmp = Math.round(inc.compute * 0.2 * cycles);
+      GameState.resources.metal += gainM;
+      GameState.resources.crystal += gainC;
+      GameState.resources.deut += gainD;
+      GameState.resources.compute += gainCmp;
+      if (GameState.baseBuildQueue && now >= GameState.baseBuildQueue.finishAt) {
+        const done = GameState.baseBuildQueue;
+        GameState.baseBuildQueue = null;
+        if (!GameState.baseDefenses) GameState.baseDefenses = { turret: 1, shield: 1, droneDock: 0, antimatter: 0 };
+        GameState.baseDefenses[done.id] = done.targetLv;
+        addLog(`🏰 离线期间建造完成：【${done.name}】已升至 Lv.${done.targetLv}！`, 'good');
+      }
+      GameState.lastSavedAt = now;
+      const mins = Math.floor(cappedSec / 60);
+      const secs = cappedSec % 60;
+      addLog(`🌙 【离线后台收益结算】（离线 ${mins}分${secs}秒）：⚙️+${gainM} 💎+${gainC} 🧪+${gainD} 🧠+${gainCmp}`, 'good');
+      setTimeout(() => showToast(`🌙 离线后台收益：⚙️+${gainM} 💎+${gainC} 🧪+${gainD}`, 'emerald'), 800);
+    }
+
     function saveToStorage() {
       try {
+        GameState.lastSavedAt = Date.now();
         localStorage.setItem(SAVE_KEY, JSON.stringify(GameState));
         if (GameState.commander?.registered && GameState.commander?.name) {
           const key = GameState.commander.name.toLowerCase();
@@ -7246,6 +7402,7 @@
           const allAccounts = loadAllAccountStates();
           if (allAccounts[activeKey] && allAccounts[activeKey].starSystems) {
             GameState = allAccounts[activeKey];
+            applyOfflineBackgroundProgress();
             return true;
           }
         }
@@ -7254,6 +7411,7 @@
         const parsed = JSON.parse(raw);
         if (parsed && parsed.starSystems && parsed.blueprints) {
           GameState = parsed;
+          applyOfflineBackgroundProgress();
           return true;
         }
       } catch (e) {
@@ -7297,8 +7455,8 @@
       // Real-Time Streaming Speed Controls (0 = Pause, 1 = 1x, 2 = 2x, 4 = 4x)
       document.getElementById('btnSpeedPause').addEventListener('click', () => setAutoTurnSpeed(0));
       document.getElementById('btnSpeed1x').addEventListener('click', () => setAutoTurnSpeed(1));
-      document.getElementById('btnSpeed2x').addEventListener('click', () => setAutoTurnSpeed(2));
-      document.getElementById('btnNextTurn').addEventListener('click', () => setAutoTurnSpeed(4));
+
+
 
       // Audio Mute Toggle
       document.getElementById('btnAudioToggle').addEventListener('click', (e) => {
@@ -7466,6 +7624,23 @@
       });
 
       // Starmap HUD Buttons (Real-Time Fleet March along Hyperlane -> Enter Tactical Combat)
+      document.getElementById('starmapAttackSquadronSelect')?.addEventListener('change', (e) => {
+        GameState.activeSquadronId = e.target.value;
+        saveToStorage();
+        renderTopBarAndSidebar();
+      });
+
+      document.getElementById('btnSkipWatchCombat')?.addEventListener('click', () => {
+        if (!CombatSim.running) return;
+        let safety = 0;
+        while (CombatSim.running && safety < 12000) {
+          stepCombatTick();
+          safety++;
+        }
+        if (CombatSim.running) finishCombatSimulation();
+        SoundFX.play('click');
+      });
+
       document.getElementById('btnAttackSystem').addEventListener('click', () => {
         const sys = GameState.starSystems[GameState.selectedSystemId];
         if (!sys || sys.owner === 'player') return;
@@ -8658,15 +8833,27 @@
           showToast(`资源不足！武装【${def.name}】需要 ⚙️${mCost} 金属、💎${cCost} 晶体`, 'red');
           return;
         }
+        if (GameState.baseBuildQueue && Date.now() < GameState.baseBuildQueue.finishAt) {
+          const rem = Math.ceil((GameState.baseBuildQueue.finishAt - Date.now()) / 1000);
+          showToast(`已有工程正在建造【${GameState.baseBuildQueue.name}】，还剩 ${rem} 秒！`, 'amber');
+          return;
+        }
         GameState.resources.metal -= mCost;
         GameState.resources.crystal -= cCost;
-        GameState.baseDefenses[id] = lv + 1;
+        const buildSec = 15 + lv * 10;
+        GameState.baseBuildQueue = {
+          id,
+          name: def.name,
+          targetLv: lv + 1,
+          startedAt: Date.now(),
+          finishAt: Date.now() + buildSec * 1000
+        };
         SoundFX.play('install');
         saveToStorage();
-        syncCurrentCommanderToGlobalRegistry();
         renderTopBarAndSidebar();
         renderPlayersView();
-        showToast(`🏰 成功将【${def.name}】武装至 Lv.${lv + 1}！`, 'emerald');
+        addLog(`🔨 母星工程队列启动：正在建造【${def.name} Lv.${lv + 1}】，预计耗时 ${buildSec} 秒（支持离线后台继续建造）。`, 'info');
+        showToast(`🔨 开始建造【${def.name} Lv.${lv + 1}】，预计 ${buildSec} 秒完成！`, 'cyan');
       });
 
       document.getElementById('btnBaseActionAttack').addEventListener('click', () => {
