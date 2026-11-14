@@ -188,7 +188,7 @@
             <span id="topCommanderName" class="font-bold text-cyan-300">未命名指挥官</span>
             <span id="topCommanderUid" class="text-[10px] px-1 rounded bg-cyan-500/15 text-cyan-200 mono">UID:--</span>
           </div>
-          <div id="topCommanderRank" class="text-[10px] text-amber-300 mono">未登榜 · 需完成授勋流程</div>
+          <div id="topCommanderRank" class="text-[10px] text-amber-300 mono">未登榜 · ✏️ 改名/换头像</div>
         </div>
       </button>
 
@@ -475,6 +475,7 @@
             <input id="blueprintNameInput" type="text" value="猎户座级磁轨巡洋舰" class="bg-slate-900 border border-cyan-500/40 rounded px-2 py-1 text-xs text-white w-40 focus:outline-none focus:border-cyan-400" placeholder="输入蓝图名称..." />
             <button id="btnSaveBlueprint" class="cyber-btn px-2.5 py-1 rounded text-xs font-medium">💾 保存蓝图</button>
             <button id="btnAutoFillBlueprint" class="cyber-btn-amber px-2.5 py-1 rounded text-xs font-medium">⚡ 智能推荐配装</button>
+            <button id="btnToggleUninstallMode" class="cyber-btn px-2.5 py-1 rounded text-xs font-medium" title="开启后点击网格上的配件即可直接卸载">🔧 拆卸模式: 关</button>
             <button id="btnClearGrid" class="cyber-btn-red px-2 py-1 rounded text-xs">🗑️ 清空</button>
           </div>
         </div>
@@ -486,7 +487,7 @@
           <div class="xl:col-span-4 flex flex-col bg-slate-950/70 border border-slate-800 rounded-lg p-2.5 min-h-[320px]">
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-bold text-cyan-300">📦 模块库 (点击选中后点击网格安装)</span>
-              <span class="text-[10px] text-slate-400 mono">右键网格可拆卸</span>
+              <span class="text-[10px] text-cyan-300 mono">点网格右上角×或再点一次即可拆卸</span>
             </div>
 
             <!-- Category Filter Tabs -->
@@ -3529,6 +3530,7 @@
             if (installed) {
               const rarityBorder = installed.rarityTier !== undefined ? `rarity-${installed.rarityTier}` : '';
               cell.innerHTML = `
+                <button type="button" data-remove-cell="${key}" class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-600 hover:bg-rose-500 text-white text-[10px] leading-none flex items-center justify-center shadow z-20" title="点击卸载此模块">×</button>
                 <span class="text-sm sm:text-base leading-none">${installed.icon || '⚙️'}</span>
                 <span class="text-[9px] font-semibold leading-tight truncate w-full px-0.5 ${rarityBorder}">${installed.short || installed.name.slice(0, 3)}</span>
               `;
@@ -3541,8 +3543,17 @@
               cell.title = `空${slotLabelMap[slotType]}槽 [${r},${c}] — 点击安装选中模块`;
             }
 
-            // Left click: install selected module (or remove if clicking same module)
-            cell.addEventListener('click', () => {
+            // Left click / Touch tap: remove if × button tapped, uninstall mode active, or tapping same/empty-selection installed module
+            cell.addEventListener('click', (e) => {
+              if (e.target.closest('[data-remove-cell]') || isDesignerUninstallMode) {
+                if (d.grid[key]) {
+                  delete d.grid[key];
+                  SoundFX.play('click');
+                  renderShipGrid();
+                  renderDesignerStatsAndAdjacency();
+                }
+                return;
+              }
               installModuleAtCell(r, c, slotType);
             });
             // Right click: uninstall module
@@ -3562,11 +3573,30 @@
       }
     }
 
+    let isDesignerUninstallMode = false;
+
     function installModuleAtCell(r, c, slotType) {
       const d = GameState.designer;
+      const key = `${r},${c}`;
       const mod = findModuleTemplate(d.selectedModuleId);
       if (!mod) {
+        if (d.grid[key]) {
+          delete d.grid[key];
+          SoundFX.play('click');
+          renderShipGrid();
+          renderDesignerStatsAndAdjacency();
+          showToast('已卸载该槽位模块', 'amber');
+          return;
+        }
         showToast('请先在左侧模块库点击选择一个要安装的模块', 'amber');
+        return;
+      }
+      if (d.grid[key] && d.grid[key].id === mod.id) {
+        delete d.grid[key];
+        SoundFX.play('click');
+        renderShipGrid();
+        renderDesignerStatsAndAdjacency();
+        showToast(`已卸载【${mod.name}】`, 'amber');
         return;
       }
       if (!mod.allowedSlots.includes(slotType)) {
@@ -3575,7 +3605,6 @@
         showToast(`槽位不匹配！【${mod.name}】无法安装在${map[slotType]}`, 'red');
         return;
       }
-      const key = `${r},${c}`;
       d.grid[key] = structuredClone(mod);
       SoundFX.play('install');
       renderShipGrid();
@@ -6647,8 +6676,24 @@
 
       // Left Sidebar Quick Fleet Actions
       document.getElementById('btnQuickBuildShip').addEventListener('click', () => {
-        const bp = GameState.blueprints[0];
-        if (bp) produceShipFromBlueprint(bp);
+        const curStats = evaluateShipBlueprint(GameState.designer.hullId, GameState.designer.grid, GameState.designer.aiRange, GameState.designer.aiTarget);
+        if (curStats.canDeploy) {
+          produceShipFromBlueprint({
+            id: 'bp_active_' + Date.now(),
+            name: GameState.designer.name || HULL_SPECS[GameState.designer.hullId].name,
+            hullId: GameState.designer.hullId,
+            aiRange: GameState.designer.aiRange,
+            aiTarget: GameState.designer.aiTarget,
+            grid: GameState.designer.grid
+          });
+          return;
+        }
+        const validBp = GameState.blueprints.find(b => evaluateShipBlueprint(b.hullId, b.grid, b.aiRange, b.aiTarget).canDeploy);
+        if (validBp) {
+          produceShipFromBlueprint(validBp);
+        } else {
+          showToast('当前蓝图电力/算力超载，请点击「⚡ 智能推荐配装」自动平衡后再建造！', 'red');
+        }
       });
       document.getElementById('btnRepairFleet').addEventListener('click', () => {
         SoundFX.play('install');
@@ -6953,6 +6998,18 @@
         renderDesignerStatsAndAdjacency();
       });
 
+      document.getElementById('btnToggleUninstallMode')?.addEventListener('click', () => {
+        isDesignerUninstallMode = !isDesignerUninstallMode;
+        const btn = document.getElementById('btnToggleUninstallMode');
+        if (btn) {
+          btn.textContent = isDesignerUninstallMode ? '🔧 拆卸模式: 开 (点击卸载)' : '🔧 拆卸模式: 关';
+          btn.className = isDesignerUninstallMode
+            ? 'cyber-btn-red px-2.5 py-1 rounded text-xs font-bold'
+            : 'cyber-btn px-2.5 py-1 rounded text-xs font-medium';
+        }
+        SoundFX.play('click');
+      });
+
       document.getElementById('btnAutoFillBlueprint').addEventListener('click', () => {
         SoundFX.play('install');
         const hullId = GameState.designer.hullId;
@@ -6965,7 +7022,7 @@
             if (st === 'C') {
               newGrid[`${r},${c}`] = structuredClone(findModuleTemplate((r + c) % 2 === 0 ? 'reactor_fusion' : 'cpu_quantum'));
             } else if (st === 'W') {
-              const wList = ['wpn_railgun', 'wpn_laser', 'wpn_missile', 'wpn_plasma'];
+              const wList = ['wpn_laser', 'wpn_missile', 'wpn_railgun', 'wpn_plasma'];
               newGrid[`${r},${c}`] = structuredClone(findModuleTemplate(wList[(r + c) % wList.length]));
             } else if (st === 'E') {
               newGrid[`${r},${c}`] = structuredClone(findModuleTemplate('engine_ion'));
@@ -6977,10 +7034,38 @@
             }
           }
         }
+        for (let pass = 0; pass < 8; pass++) {
+          const evalRes = evaluateShipBlueprint(hullId, newGrid, GameState.designer.aiRange, GameState.designer.aiTarget);
+          if (evalRes.canDeploy) break;
+          if (evalRes.powerNet < 0) {
+            const upgradeKey = Object.keys(newGrid).find(k => {
+              const [rr, cc] = k.split(',').map(Number);
+              const st = hull.layout[rr][cc];
+              return (st === 'U' || st === 'C') && newGrid[k].id !== 'reactor_fusion' && newGrid[k].id !== 'cpu_quantum';
+            });
+            if (upgradeKey) {
+              newGrid[upgradeKey] = structuredClone(findModuleTemplate('reactor_fusion'));
+              continue;
+            }
+            const wpnKey = Object.keys(newGrid).find(k => newGrid[k].cat === 'weapon');
+            if (wpnKey) { delete newGrid[wpnKey]; continue; }
+          }
+          if (evalRes.cpuNet < 0) {
+            const cKey = Object.keys(newGrid).find(k => {
+              const [rr, cc] = k.split(',').map(Number);
+              return (hull.layout[rr][cc] === 'C' || hull.layout[rr][cc] === 'U') && newGrid[k].id !== 'cpu_quantum';
+            });
+            if (cKey) {
+              newGrid[cKey] = structuredClone(findModuleTemplate('cpu_quantum'));
+              continue;
+            }
+          }
+          break;
+        }
         GameState.designer.grid = newGrid;
         renderShipGrid();
         renderDesignerStatsAndAdjacency();
-        showToast('已完成智能高协同配装，自动激活多项邻接加成！', 'amber');
+        showToast('已完成智能高协同配装，电力与算力已自动平衡，可直接建造！', 'amber');
       });
 
       document.getElementById('savedBlueprintsList').addEventListener('click', (e) => {
