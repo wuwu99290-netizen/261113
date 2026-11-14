@@ -334,6 +334,22 @@
 
     <!-- CENTER MAIN VIEWPORT -->
     <main class="flex-1 cyber-panel rounded-lg flex flex-col relative">
+      <!-- Clear Step-by-Step Gameplay Guide Ribbon -->
+      <div id="stepGuideRibbon" class="px-3 py-1.5 bg-gradient-to-r from-cyan-950/70 via-slate-900/90 to-purple-950/70 border-b border-cyan-500/30 flex flex-wrap items-center justify-between gap-2 text-[11px] shrink-0">
+        <div class="flex flex-wrap items-center gap-1.5 text-slate-200">
+          <span class="font-bold text-cyan-300">🧭 游玩路线指引：</span>
+          <button type="button" data-jump-view="designer" class="px-1.5 py-0.5 rounded bg-slate-800/90 hover:bg-cyan-900/60 border border-cyan-500/30 text-cyan-200">① 配装造船与编队</button>
+          <span class="text-slate-500">→</span>
+          <button type="button" data-jump-view="empire" class="px-1.5 py-0.5 rounded bg-slate-800/90 hover:bg-purple-900/60 border border-purple-500/30 text-purple-200">② 招募军官拿限定蓝图</button>
+          <span class="text-slate-500">→</span>
+          <button type="button" data-jump-view="starmap" class="px-1.5 py-0.5 rounded bg-slate-800/90 hover:bg-emerald-900/60 border border-emerald-500/30 text-emerald-200">③ 探索星图采矿打AI</button>
+          <span class="text-slate-500">→</span>
+          <button type="button" data-jump-view="diplomacy" class="px-1.5 py-0.5 rounded bg-slate-800/90 hover:bg-amber-900/60 border border-amber-500/30 text-amber-200">④ 联盟借船打BOSS冲榜</button>
+          <span class="text-slate-500">→</span>
+          <button type="button" data-jump-view="players" class="px-1.5 py-0.5 rounded bg-slate-800/90 hover:bg-rose-900/60 border border-rose-500/30 text-rose-200">⑤ 武装基地 & 真人PVP</button>
+        </div>
+        <button id="btnToggleGuideRibbon" type="button" class="text-[10px] text-slate-400 hover:text-white px-1.5">隐藏指引</button>
+      </div>
 
       <!-- VIEW 1: STARMAP MODE -->
       <section id="view-starmap" class="flex-1 flex flex-col">
@@ -480,7 +496,9 @@
             <button data-hull="destroyer" class="hull-select-btn cyber-btn px-2 py-1 rounded text-[11px] mono">驱逐舰 (6x6)</button>
             <button data-hull="cruiser" class="hull-select-btn cyber-btn px-2 py-1 rounded text-[11px] mono">巡洋舰 (7x7)</button>
             <button data-hull="carrier" class="hull-select-btn cyber-btn px-2 py-1 rounded text-[11px] mono">母舰 (8x8)</button>
+            <button data-hull="artillery" class="hull-select-btn cyber-btn px-2 py-1 rounded text-[11px] mono">炮击舰 (7x7)</button>
             <button data-hull="battleship" class="hull-select-btn cyber-btn px-2 py-1 rounded text-[11px] mono">战列舰 (9x9)</button>
+            <button data-hull="titan" class="hull-select-btn cyber-btn px-2 py-1 rounded text-[11px] mono">泰坦堡垒 (9x9)</button>
           </div>
           <div class="flex flex-wrap items-center gap-1.5">
             <input id="blueprintNameInput" type="text" value="猎户座级磁轨巡洋舰" class="bg-slate-900 border border-cyan-500/40 rounded px-2 py-1 text-xs text-white w-40 focus:outline-none focus:border-cyan-400" placeholder="输入蓝图名称..." />
@@ -866,6 +884,20 @@
         </div>
 
         <!-- 6 AI Star Lords Grid -->
+        <!-- Alliance Boss Damage Ranking Event -->
+        <div class="bg-gradient-to-r from-rose-950/60 via-slate-950/90 to-amber-950/50 border border-rose-500/45 rounded-lg p-3 space-y-2 mb-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <span class="text-xs font-extrabold text-rose-300">👹 联盟限时讨伐活动：深渊星穹巨兽 BOSS 伤害榜</span>
+              <span class="text-[11px] text-slate-300 ml-2">单场对 BOSS 造成伤害越高排名越前（#1 奖 🌌250 💎500）</span>
+            </div>
+            <button id="btnFightAllianceBoss" type="button" class="cyber-btn-red px-3.5 py-1.5 rounded-lg text-xs font-extrabold shadow">⚔️ 出击讨伐联盟 BOSS</button>
+          </div>
+          <div id="allianceBossRankingList" class="grid grid-cols-1 sm:grid-cols-3 gap-1.5 text-[11px] mono">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2.5" id="aiLordsGrid">
           <!-- Populated dynamically by JS -->
         </div>
@@ -1066,6 +1098,17 @@
                 </div>
               </div>
 
+              <!-- Own Base Armament & Defense Upgrade Panel (Visible when inspecting own base) -->
+              <div id="myBaseArmamentPanel" class="hidden mt-2 p-2.5 rounded-lg bg-slate-900/95 border border-amber-500/45 space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-amber-300">🏰 武装我的母星基地（升级炮台/护盾/无人机坞，抵御其他玩家掠夺）</span>
+                  <span id="myBaseDefensePowerBadge" class="text-[11px] mono text-emerald-300 font-bold">基地防卫战力: 700</span>
+                </div>
+                <div id="myBaseDefenseGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                  <!-- Populated by JS -->
+                </div>
+              </div>
+
               <!-- Player Base Bio / Intel Report -->
               <div id="inspectedBaseIntelBox" class="mt-2 p-2 rounded bg-slate-900/70 border border-slate-800 text-[11px] text-slate-300 leading-relaxed">
                 点击下方行动按钮可对该玩家基地执行【舰队强袭掠夺】、【深度电子侦察】、【战术演习切磋】、【暗物质/晶体援助】或【破坏行星护盾】。
@@ -1086,7 +1129,8 @@
               <button id="btnBaseActionScout" class="cyber-btn py-1.5 px-2 rounded text-xs">🛰️ 深度侦察蓝图</button>
               <button id="btnBaseActionSabotage" class="cyber-btn py-1.5 px-2 rounded text-xs">💣 特工瘫痪护盾</button>
               <button id="btnBaseActionGift" class="cyber-btn py-1.5 px-2 rounded text-xs">🎁 赠送晶体结交</button>
-              <button id="btnBaseActionCopyBp" class="cyber-btn-amber col-span-2 sm:col-span-3 py-1.5 px-2 rounded text-xs font-bold">📐 逆向复制其配装</button>
+              <button id="btnBaseActionBorrowShip" class="cyber-btn py-1.5 px-2 rounded text-xs font-bold">🤝 联盟借调助战舰</button>
+              <button id="btnBaseActionCopyBp" class="cyber-btn-amber col-span-2 py-1.5 px-2 rounded text-xs font-bold">📐 逆向复制其配装</button>
             </div>
           </div>
         </div>
@@ -1486,6 +1530,21 @@
     </div>
   </div>
 
+  <!-- PVP Incoming Raid / Reparations Alert Modal -->
+  <div id="pvpAlertModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="cyber-panel max-w-md w-full rounded-xl p-5 border-2 border-rose-500/80 shadow-2xl space-y-3">
+      <div class="flex items-center justify-between border-b border-rose-500/30 pb-2">
+        <span class="text-sm font-extrabold text-rose-400">🚨 紧急基地遇袭 / 战争赔款警报</span>
+        <button id="btnClosePvpAlert" class="text-slate-400 hover:text-white text-sm px-2">✕</button>
+      </div>
+      <div id="pvpAlertBody" class="text-xs text-slate-200 space-y-2 leading-relaxed"></div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button id="btnPvpAlertRevenge" class="cyber-btn-red px-4 py-2 rounded-lg text-xs font-bold">⚔️ 前往锁定复仇</button>
+        <button id="btnPvpAlertAck" class="cyber-btn px-4 py-2 rounded-lg text-xs font-bold">已知晓战损</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     /*************************************************************************
      * 《星穹构筑者：银河霸权 (StarForge: Galactic Hegemony)》
@@ -1673,6 +1732,44 @@
           ['A', 'W', 'U', 'U', 'U', 'U', 'W', 'A'],
           ['.', 'A', 'U', 'E', 'E', 'U', 'A', '.'],
           ['.', '.', 'A', 'E', 'E', 'A', '.', '.']
+        ]
+      },
+      artillery: {
+        id: 'artillery',
+        name: '远程炮击舰',
+        size: 7,
+        baseHp: 980,
+        baseSpeed: 64,
+        baseEvasion: 16,
+        baseCost: { metal: 210, crystal: 130, deut: 65 },
+        layout: [
+          ['.', '.', 'W', 'W', 'W', '.', '.'],
+          ['.', 'A', 'W', 'U', 'W', 'A', '.'],
+          ['A', 'W', 'U', 'C', 'U', 'W', 'A'],
+          ['A', 'U', 'C', 'C', 'C', 'U', 'A'],
+          ['A', 'U', 'U', 'C', 'U', 'U', 'A'],
+          ['.', 'A', 'E', 'E', 'E', 'A', '.'],
+          ['.', '.', 'A', 'E', 'A', '.', '.']
+        ]
+      },
+      titan: {
+        id: 'titan',
+        name: '泰坦级星穹堡垒',
+        size: 9,
+        baseHp: 3800,
+        baseSpeed: 42,
+        baseEvasion: 6,
+        baseCost: { metal: 560, crystal: 340, deut: 180 },
+        layout: [
+          ['.', '.', 'A', 'W', 'W', 'W', 'A', '.', '.'],
+          ['.', 'A', 'W', 'W', 'U', 'W', 'W', 'A', '.'],
+          ['A', 'W', 'U', 'C', 'C', 'C', 'U', 'W', 'A'],
+          ['A', 'W', 'U', 'C', 'C', 'C', 'U', 'W', 'A'],
+          ['A', 'U', 'C', 'C', 'C', 'C', 'C', 'U', 'A'],
+          ['A', 'W', 'U', 'C', 'C', 'C', 'U', 'W', 'A'],
+          ['.', 'A', 'U', 'C', 'U', 'C', 'U', 'A', '.'],
+          ['.', '.', 'A', 'E', 'E', 'E', 'A', '.', '.'],
+          ['.', '.', '.', 'A', 'E', 'A', '.', '.', '.']
         ]
       },
       battleship: {
@@ -2161,12 +2258,38 @@
     ];
 
     const OFFICER_ROSTER = [
-      { id: 'off_gunner', name: '传奇炮术长 · 凯尔', icon: '🎯', role: '武器指挥官', costCrystal: 180, costDark: 30, buffType: 'dmg', buffVal: 0.16, desc: '全舰队武器伤害 +16%' },
-      { id: 'off_shield', name: '护盾工程大师 · 艾琳娜', icon: '🛡️', role: '首席防御官', costCrystal: 180, costDark: 30, buffType: 'shield', buffVal: 0.22, desc: '全舰队护盾上限与回充 +22%' },
-      { id: 'off_drone', name: '蜂群战术官 · 零号', icon: '🛸', role: '航母无人机指挥', costCrystal: 220, costDark: 45, buffType: 'drone', buffVal: 2, desc: '每艘舰船额外携带 +2 架攻击无人机' },
-      { id: 'off_raider', name: '深空掠夺王 · 巴尔干', icon: '🏴‍☠️', role: '远征掠夺官', costCrystal: 160, costDark: 25, buffType: 'loot', buffVal: 0.25, desc: 'PVP 与星系战斗资源掠夺收益 +25%' },
-      { id: 'off_scholar', name: '量子超算学者 · 林博士', icon: '🧠', role: '帝国首席科学家', costCrystal: 170, costDark: 35, buffType: 'compute', buffVal: 0.25, desc: '每回合算力与科研产出 +25%' }
+      { id: 'off_gunner', name: '传奇炮术长 · 凯尔', icon: '🎯', role: '武器指挥官', costCrystal: 180, costDark: 30, buffType: 'dmg', buffVal: 0.16, unlockHull: 'artillery', unlockBpName: '[军官限定] 凯尔·天罚炮击舰', desc: '全舰队武器伤害 +16% · 解锁限定【天罚炮击舰】蓝图' },
+      { id: 'off_shield', name: '护盾工程大师 · 艾琳娜', icon: '🛡️', role: '首席防御官', costCrystal: 180, costDark: 30, buffType: 'shield', buffVal: 0.22, unlockHull: 'cruiser', unlockBpName: '[军官限定] 艾琳娜·圣盾巡洋舰', desc: '全舰队护盾上限与回充 +22% · 解锁限定【圣盾巡洋舰】蓝图' },
+      { id: 'off_drone', name: '蜂群战术官 · 零号', icon: '🛸', role: '航母无人机指挥', costCrystal: 220, costDark: 45, buffType: 'drone', buffVal: 2, unlockHull: 'carrier', unlockBpName: '[军官限定] 零号·蜂巢无人机母舰', desc: '每舰 +2 无人机 · 解锁限定【蜂巢无人机母舰】蓝图' },
+      { id: 'off_raider', name: '深空掠夺王 · 巴尔干', icon: '🏴‍☠️', role: '远征掠夺官', costCrystal: 160, costDark: 25, buffType: 'loot', buffVal: 0.25, unlockHull: 'corvette', unlockBpName: '[军官限定] 巴尔干·幽灵突击艇', desc: '掠夺收益 +25% · 解锁限定【幽灵突击艇】蓝图' },
+      { id: 'off_scholar', name: '量子超算学者 · 林博士', icon: '🧠', role: '帝国首席科学家', costCrystal: 170, costDark: 35, buffType: 'compute', buffVal: 0.25, unlockHull: 'titan', unlockBpName: '[军官限定] 林博士·星穹泰坦堡垒', desc: '算力产出 +25% · 解锁限定【星穹泰坦堡垒】蓝图' }
     ];
+
+    function buildExclusiveOfficerBlueprint(off) {
+      const hullId = off.unlockHull || 'cruiser';
+      const hull = HULL_SPECS[hullId] || HULL_SPECS.cruiser;
+      const grid = {};
+      for (let r = 0; r < hull.size; r++) {
+        for (let c = 0; c < hull.size; c++) {
+          const st = hull.layout[r][c];
+          if (st === '.') continue;
+          if (st === 'C') grid[`${r},${c}`] = structuredClone(findModuleTemplate((r + c) % 2 === 0 ? 'reactor_antimatter' : 'cpu_quantum'));
+          else if (st === 'E') grid[`${r},${c}`] = structuredClone(findModuleTemplate('thruster_warp'));
+          else if (st === 'W') grid[`${r},${c}`] = structuredClone(findModuleTemplate(off.id === 'off_drone' ? 'drone_hangar' : (off.id === 'off_gunner' ? 'wpn_railgun' : 'wpn_torpedo')));
+          else if (st === 'U') grid[`${r},${c}`] = structuredClone(findModuleTemplate(off.id === 'off_drone' ? 'drone_hangar' : (off.id === 'off_shield' ? 'def_shield' : (off.id === 'off_raider' ? 'cloak_phase' : 'nano_repair'))));
+          else if (st === 'A' && (r === 2 || r === 3)) grid[`${r},${c}`] = structuredClone(findModuleTemplate('def_armor'));
+        }
+      }
+      return {
+        id: 'bp_off_' + off.id,
+        name: off.unlockBpName,
+        hullId,
+        aiRange: 'skirmish',
+        aiTarget: 'shield_low',
+        exclusiveOfficer: off.name,
+        grid
+      };
+    }
 
     // 6 AI Star Lords Definitions
     const AI_LORDS_TEMPLATE = [
@@ -2508,6 +2631,7 @@
         compute: 140,
         relicCores: 3
       },
+      baseDefenses: { turret: 1, shield: 1, droneDock: 0, antimatter: 0 },
       recruitedOfficers: [],
       activeOfficers: [],
       techLevels: {
@@ -2549,6 +2673,11 @@
         rallyTargetSysId: null
       },
       aiLords: [],
+      myAllianceBossBestDmg: 0,
+      allianceBossBoard: [
+        { name: '铁血机械肃正帝国', dmg: 6400, isAi: true },
+        { name: '天秤座星际贸易财团', dmg: 4100, isAi: true }
+      ],
       crisis: {
         active: false,
         name: '远古泰坦残骸现世',
@@ -4399,6 +4528,7 @@
       CombatSim.targetPlayerId = config.targetPlayerId ?? null;
       CombatSim.isPlayerLootRaid = !!config.isPlayerLootRaid;
       CombatSim.isCrisisBattle = !!config.isCrisisBattle;
+      CombatSim.isAllianceBossBattle = !!config.isAllianceBossBattle;
       CombatSim.projectiles = [];
       CombatSim.allies.forEach(ally => {
         const dCnt = ally.droneCount || 0;
@@ -5248,7 +5378,7 @@
 
         if (CombatSim.targetPlayerId) {
           const registry = loadGlobalPlayersRegistry();
-          const targetP = registry.find(p => p.id === CombatSim.targetPlayerId);
+          const targetP = registry.find(p => p.uid === CombatSim.targetPlayerId || p.id === CombatSim.targetPlayerId);
           if (targetP) {
             // 1. Synchronize Mutual Damage to Attacker (our lost ships are destroyed or damaged)
             const survivingRatio = CombatSim.allies.filter(a => a.hp > 0).length / Math.max(1, CombatSim.allies.length);
@@ -5277,13 +5407,16 @@
               saveGlobalPlayersRegistry(registry);
               if (targetP.uid) {
                 pushAsyncPvpRaidToInbox(targetP.uid, {
+                  type: 'raid',
                   attackerName: GameState.commander?.name || '未知指挥官',
                   attackerUid: GameState.commander?.uid || '',
                   lootMetal: mLoot,
                   lootCrystal: cLoot,
+                  shipsLost: 1,
                   timestamp: Date.now()
                 });
               }
+              syncWithCloudLeaderboard(true);
 
               const allAccounts = loadAllAccountStates();
               const defKey = (targetP.name || '').toLowerCase();
@@ -5318,6 +5451,22 @@
               showToast(`切磋获胜！获得 +45 算力`, 'cyan');
             }
           }
+        }
+
+        if (CombatSim.isAllianceBossBattle) {
+          const totalDealt = CombatSim.stats.ally.laser + CombatSim.stats.ally.rail + CombatSim.stats.ally.missile + CombatSim.stats.ally.plasma;
+          if (totalDealt > (GameState.myAllianceBossBestDmg || 0)) {
+            GameState.myAllianceBossBestDmg = totalDealt;
+          }
+          const rewardDark = Math.min(250, 40 + Math.round(totalDealt / 60));
+          const rewardCrys = Math.min(500, 80 + Math.round(totalDealt / 30));
+          GameState.resources.darkMatter += rewardDark;
+          GameState.resources.crystal += rewardCrys;
+          addLog(`👹 联盟BOSS讨伐结算：单场打出 ${totalDealt} 点总伤害！获得 🌌+${rewardDark} 💎+${rewardCrys}，已计入联盟伤害排行榜！`, 'relic');
+          showToast(`👹 对联盟BOSS打出 ${totalDealt} 伤害！获 🌌+${rewardDark} 💎+${rewardCrys}`, 'amber');
+          saveToStorage();
+          renderDiplomacyView();
+          renderTopBarAndSidebar();
         }
 
         if (CombatSim.isCrisisBattle) {
@@ -5561,6 +5710,27 @@
       document.getElementById('commanderAuthorityHint').textContent = al.isSupremeCommander
         ? `你已执掌最高指挥权（当前联盟支持票：${supportCount}/5），可随时发动集结令、分配战利品或制裁敌对领主！`
         : `当前联盟支持票：${supportCount}/5（向盟内领主馈赠晶体/暗物质使好感度 ≥ 45 即可获得其选票）`;
+
+      // Render Alliance Boss Damage Ranking
+      const bossListEl = document.getElementById('allianceBossRankingList');
+      if (bossListEl) {
+        if (!Array.isArray(GameState.allianceBossBoard)) {
+          GameState.allianceBossBoard = [
+            { name: '铁血机械肃正帝国', dmg: 6400, isAi: true },
+            { name: '天秤座星际贸易财团', dmg: 4100, isAi: true }
+          ];
+        }
+        const myName = GameState.commander?.name || '我方指挥官';
+        const board = GameState.allianceBossBoard.filter(x => x.name !== myName);
+        board.push({ name: myName, dmg: GameState.myAllianceBossBestDmg || 0, isMe: true });
+        board.sort((a, b) => b.dmg - a.dmg);
+        bossListEl.innerHTML = board.slice(0, 6).map((row, idx) => `
+          <div class="p-2 rounded border ${row.isMe ? 'bg-amber-950/50 border-amber-400 text-amber-200' : 'bg-slate-900/85 border-slate-800 text-slate-300'} flex items-center justify-between">
+            <span class="truncate font-bold">#${idx + 1} ${escapeHtml(row.name)}</span>
+            <span class="text-rose-300 font-bold shrink-0">伤害 ${row.dmg}</span>
+          </div>
+        `).join('');
+      }
 
       const grid = document.getElementById('aiLordsGrid');
       grid.innerHTML = '';
@@ -6022,23 +6192,41 @@
         if (!inboxObj || typeof inboxObj !== 'object') return;
 
         let changed = false;
+        const alertLines = [];
+        let lastAttackerUid = '';
         for (const [raidId, raid] of Object.entries(inboxObj)) {
           if (!raid || raid.processed) continue;
           const mLoss = Math.min(GameState.resources.metal, raid.lootMetal || 0);
           const cLoss = Math.min(GameState.resources.crystal, raid.lootCrystal || 0);
           GameState.resources.metal -= mLoss;
           GameState.resources.crystal -= cLoss;
-          if (GameState.fleet.length > 1) GameState.fleet.pop();
-          GameState.commander.losses = (GameState.commander.losses || 0) + 1;
-          addLog(`🚨 【异步PVP警报】你离线期间遭玩家「${raid.attackerName} (${raid.attackerUid})」强袭基地！损失 ⚙️${mLoss} 💎${cLoss} 及 1 艘护航舰！`, 'combat');
-          showToast(`🚨 离线期间遭 ${raid.attackerName} 突袭，损失 ⚙️${mLoss} 💎${cLoss}！`, 'red');
+          const isTribute = raid.type === 'tribute';
+          let shipLostMsg = '';
+          if (!isTribute && GameState.fleet.length > 1) {
+            const lost = GameState.fleet.pop();
+            shipLostMsg = `，损毁舰船【${lost?.name || '护航舰'}】`;
+          }
+          if (!isTribute) GameState.commander.losses = (GameState.commander.losses || 0) + 1;
+          lastAttackerUid = raid.attackerUid || lastAttackerUid;
+          const actionLabel = isTribute ? '发来最后通牒并强行划走战争赔款' : '强袭攻破了你的母星基地';
+          const line = `• 玩家 <strong>${escapeHtml(raid.attackerName)}</strong> (${escapeHtml(raid.attackerUid || 'UID')}) ${actionLabel}：损失 <span class="text-amber-300 mono">⚙️-${mLoss} 💎-${cLoss}</span>${escapeHtml(shipLostMsg)}`;
+          alertLines.push(line);
+          addLog(`🚨 【PVP警报】${raid.attackerName} (${raid.attackerUid}) ${actionLabel}！损失 ⚙️${mLoss} 💎${cLoss}${shipLostMsg}`, 'combat');
           changed = true;
         }
         if (changed) {
-          // Clear processed inbox
           await fetch(`${baseUrl}/inbox/${encodeURIComponent(myUid)}.json`, { method: 'DELETE' });
           saveToStorage();
           renderTopBarAndSidebar();
+          const alertModal = document.getElementById('pvpAlertModal');
+          const alertBody = document.getElementById('pvpAlertBody');
+          const revBtn = document.getElementById('btnPvpAlertRevenge');
+          if (alertModal && alertBody) {
+            alertBody.innerHTML = `<p class="text-rose-300 font-semibold">你的母星刚刚遭到其他玩家打击或索赔，战损已同步扣除：</p><div class="space-y-1.5 bg-slate-950/90 p-2.5 rounded border border-rose-500/30">${alertLines.join('')}</div>`;
+            if (revBtn) revBtn.dataset.attackerUid = lastAttackerUid;
+            alertModal.classList.remove('hidden');
+            SoundFX.play('error');
+          }
         }
       } catch (e) {}
     }
@@ -6235,7 +6423,15 @@
           crystal: Math.round(GameState.resources.crystal * 0.25),
           dark: Math.round(GameState.resources.darkMatter * 0.2)
         },
-        buildings: ['🏛️星穹母星主城', '🛡️多频偏折护盾网', '☄️轨道磁轨防御阵列', '🏭零重力模块化船坞', '🔬先驱逆向工程院', '🧠帝国量子超算中心'],
+        baseDefensePower: getMyBaseDefensePower(),
+        buildings: [
+          '🏛️星穹母星主城',
+          `🛡️偏折护盾塔 Lv.${GameState.baseDefenses?.shield ?? 1}`,
+          `☄️轨道磁轨炮台 Lv.${GameState.baseDefenses?.turret ?? 1}`,
+          `🛸防空无人机坞 Lv.${GameState.baseDefenses?.droneDock ?? 0}`,
+          `🌌反物质聚能炮 Lv.${GameState.baseDefenses?.antimatter ?? 0}`,
+          '🏭零重力船坞'
+        ],
         fleetDesc: myFleetNames.length > 0 ? myFleetNames : ['猎户座级磁轨巡洋舰'],
         customBlueprints: structuredClone(GameState.blueprints.slice(0, 3)),
         presetType: 'mech',
@@ -6578,7 +6774,7 @@
           const isMe = p.uid === GameState.commander?.uid;
           const isSelected = p.id === GameState.selectedPlayerId || p.uid === GameState.selectedPlayerId;
           return `
-            <div data-select-player="${escapeHtml(p.id)}" class="p-2.5 rounded-lg border transition cursor-pointer flex items-center justify-between gap-2 ${
+            <div data-select-player="${escapeHtml(p.uid || p.id)}" class="p-2.5 rounded-lg border transition cursor-pointer flex items-center justify-between gap-2 ${
               isSelected
                 ? 'bg-cyan-950/60 border-cyan-400 shadow-md'
                 : (isMe ? 'bg-slate-900/95 border-amber-400/60' : 'bg-slate-900/80 border-slate-800 hover:bg-slate-800/70')
@@ -6621,6 +6817,51 @@
       if (vEl) vEl.textContent = `${vTotal} 个 (每回进贡 +${vTotal * 45}⚙️ +${vTotal * 35}💎)`;
 
       renderInspectedPlayerBase();
+    }
+
+    const BASE_DEFENSE_DEFS = [
+      { id: 'turret', icon: '☄️', name: '轨道磁轨炮台', costMetal: 140, costCrystal: 80, powerPerLv: 350, desc: '战时自动开火反击来袭舰队' },
+      { id: 'shield', icon: '🛡️', name: '行星偏折护盾塔', costMetal: 120, costCrystal: 110, powerPerLv: 320, desc: '大幅提高母星护盾与防特工能力' },
+      { id: 'droneDock', icon: '🛸', name: '基地防空无人机坞', costMetal: 150, costCrystal: 120, powerPerLv: 380, desc: '驻防拦截敌方导弹与突击艇' },
+      { id: 'antimatter', icon: '🌌', name: '反物质聚能主炮', costMetal: 220, costCrystal: 180, powerPerLv: 520, desc: '重创攻城战列舰的重型堡垒' }
+    ];
+
+    function getMyBaseDefensePower() {
+      const bd = GameState.baseDefenses || { turret: 1, shield: 1, droneDock: 0, antimatter: 0 };
+      return BASE_DEFENSE_DEFS.reduce((sum, def) => sum + (bd[def.id] || 0) * def.powerPerLv, 0);
+    }
+
+    function renderMyBaseArmamentPanel(isMe) {
+      const panel = document.getElementById('myBaseArmamentPanel');
+      if (!panel) return;
+      panel.classList.toggle('hidden', !isMe);
+      if (!isMe) return;
+      if (!GameState.baseDefenses) GameState.baseDefenses = { turret: 1, shield: 1, droneDock: 0, antimatter: 0 };
+      const defPow = getMyBaseDefensePower();
+      const powEl = document.getElementById('myBaseDefensePowerBadge');
+      if (powEl) powEl.textContent = `基地防卫战力: ${defPow}`;
+      const grid = document.getElementById('myBaseDefenseGrid');
+      if (!grid) return;
+      grid.innerHTML = BASE_DEFENSE_DEFS.map(def => {
+        const lv = GameState.baseDefenses[def.id] || 0;
+        const mCost = Math.round(def.costMetal * (1 + lv * 0.45));
+        const cCost = Math.round(def.costCrystal * (1 + lv * 0.45));
+        const maxed = lv >= 5;
+        return `
+          <div class="p-2 rounded bg-slate-950/90 border border-slate-800 flex flex-col justify-between gap-1.5">
+            <div>
+              <div class="flex items-center justify-between text-xs font-bold text-white">
+                <span>${def.icon} ${def.name}</span>
+                <span class="text-cyan-300 mono">Lv.${lv}/5</span>
+              </div>
+              <p class="text-[10px] text-slate-400 mt-0.5">${def.desc}</p>
+            </div>
+            <button type="button" data-upgrade-base-def="${def.id}" ${maxed ? 'disabled' : ''} class="${maxed ? 'bg-slate-800 text-slate-500' : 'cyber-btn-amber'} w-full py-1 rounded text-[10px] font-bold">
+              ${maxed ? '已满级' : `武装升级 (⚙️${mCost} 💎${cCost})`}
+            </button>
+          </div>
+        `;
+      }).join('');
     }
 
     function renderInspectedPlayerBase(allowDirectSelect = true) {
@@ -6672,6 +6913,7 @@
       btnAttack.disabled = isMe;
       btnSabotage.disabled = isMe;
       btnAttack.textContent = isMe ? '🛡️ 我方母星基地' : '⚔️ 强袭攻打基地';
+      renderMyBaseArmamentPanel(isMe);
     }
 
     // =========================================================================
@@ -7862,6 +8104,10 @@
           if (!Array.isArray(GameState.recruitedOfficers)) GameState.recruitedOfficers = [];
           if (!Array.isArray(GameState.activeOfficers)) GameState.activeOfficers = [];
           GameState.recruitedOfficers.push(id);
+          const exclBp = buildExclusiveOfficerBlueprint(off);
+          if (!GameState.blueprints.some(b => b.name === exclBp.name)) {
+            GameState.blueprints.unshift(exclBp);
+          }
           if (GameState.activeOfficers.length < 3) GameState.activeOfficers.push(id);
           SoundFX.play('relic');
           saveToStorage();
@@ -8341,7 +8587,7 @@
         if (!card) return;
         const pid = card.dataset.selectPlayer;
         const registry = loadGlobalPlayersRegistry();
-        const target = registry.find(p => p.id === pid);
+        const target = registry.find(p => p.uid === pid || p.id === pid);
         if (!target) return;
         SoundFX.play('click');
         GameState.selectedPlayerId = pid;
@@ -8353,7 +8599,7 @@
       // PVP Ultimatum / Demand Tribute Action
       document.getElementById('btnBaseActionUltimatum').addEventListener('click', () => {
         const registry = loadGlobalPlayersRegistry();
-        const target = registry.find(p => p.id === GameState.selectedPlayerId);
+        const target = registry.find(p => p.uid === GameState.selectedPlayerId || p.id === GameState.selectedPlayerId);
         if (!target || target.uid === GameState.commander?.uid) return;
         const myPower = getPlayerTotalFleetPower();
         if (myPower > target.fleetPower * 1.15) {
@@ -8362,7 +8608,28 @@
           GameState.resources.metal += tributeM;
           GameState.resources.crystal += tributeC;
           target.isVassal = true;
+          if (target.loot) {
+            target.loot.metal = Math.max(50, (target.loot.metal || 200) - tributeM);
+            target.loot.crystal = Math.max(50, (target.loot.crystal || 200) - tributeC);
+          }
           saveGlobalPlayersRegistry(registry);
+          if (target.uid) {
+            pushAsyncPvpRaidToInbox(target.uid, {
+              type: 'tribute',
+              attackerName: GameState.commander?.name || '未知指挥官',
+              attackerUid: GameState.commander?.uid || '',
+              lootMetal: tributeM,
+              lootCrystal: tributeC,
+              timestamp: Date.now()
+            });
+          }
+          const allAccounts = loadAllAccountStates();
+          const defKey = (target.name || '').toLowerCase();
+          if (allAccounts[defKey]) {
+            allAccounts[defKey].resources.metal = Math.max(0, (allAccounts[defKey].resources.metal || 0) - tributeM);
+            allAccounts[defKey].resources.crystal = Math.max(0, (allAccounts[defKey].resources.crystal || 0) - tributeC);
+            saveAllAccountStates(allAccounts);
+          }
           SoundFX.play('relic');
           addLog(`📜 铁血威慑生效！玩家【${target.name}】慑于我方强大的舰队实力(${myPower} vs ${target.fleetPower})，接受最后通牒献上 ⚙️${tributeM} 💎${tributeC} 并俯首称臣！`, 'good');
           showToast(`威慑成功！【${target.name}】已献上贡品并臣服`, 'emerald');
@@ -8375,10 +8642,49 @@
       });
 
       // 6 Player Base Interactive Actions
+      document.getElementById('myBaseDefenseGrid')?.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-upgrade-base-def]');
+        if (!btn) return;
+        const id = btn.dataset.upgradeBaseDef;
+        const def = BASE_DEFENSE_DEFS.find(d => d.id === id);
+        if (!def) return;
+        if (!GameState.baseDefenses) GameState.baseDefenses = { turret: 1, shield: 1, droneDock: 0, antimatter: 0 };
+        const lv = GameState.baseDefenses[id] || 0;
+        if (lv >= 5) return;
+        const mCost = Math.round(def.costMetal * (1 + lv * 0.45));
+        const cCost = Math.round(def.costCrystal * (1 + lv * 0.45));
+        if (GameState.resources.metal < mCost || GameState.resources.crystal < cCost) {
+          SoundFX.play('error');
+          showToast(`资源不足！武装【${def.name}】需要 ⚙️${mCost} 金属、💎${cCost} 晶体`, 'red');
+          return;
+        }
+        GameState.resources.metal -= mCost;
+        GameState.resources.crystal -= cCost;
+        GameState.baseDefenses[id] = lv + 1;
+        SoundFX.play('install');
+        saveToStorage();
+        syncCurrentCommanderToGlobalRegistry();
+        renderTopBarAndSidebar();
+        renderPlayersView();
+        showToast(`🏰 成功将【${def.name}】武装至 Lv.${lv + 1}！`, 'emerald');
+      });
+
       document.getElementById('btnBaseActionAttack').addEventListener('click', () => {
+        if (GameState.fleet.length === 0) {
+          SoundFX.play('error');
+          showToast('你目前没有任何现役舰船！请先在「舰船网格设计器」建造至少 1 艘舰船。', 'red');
+          return;
+        }
         const registry = loadGlobalPlayersRegistry();
-        const target = registry.find(p => p.id === GameState.selectedPlayerId);
-        if (!target || target.id === GameState.commander?.id) return;
+        const target = registry.find(p => p.uid === GameState.selectedPlayerId || p.id === GameState.selectedPlayerId);
+        if (!target) {
+          showToast('请先在左侧排行榜点击选择一个要攻打的玩家基地！', 'amber');
+          return;
+        }
+        if (target.uid && target.uid === GameState.commander?.uid) {
+          showToast('不能攻打自己的母星基地，请在左侧选择其他玩家！', 'amber');
+          return;
+        }
         const scale = Math.max(0.65, (target.fleetPower / 1850) * (target.shieldIntact === false ? 0.75 : 1.0));
         let enemyShipsList = [];
         if (Array.isArray(target.customBlueprints) && target.customBlueprints.length > 0) {
@@ -8391,7 +8697,7 @@
               gridMap: bp.grid || null,
               maxHp: Math.round(st.maxHp * (target.shieldIntact === false ? 0.75 : 1.0)),
               armor: st.armor,
-              maxShield: st.maxShield,
+              maxShield: target.shieldIntact === false ? 0 : st.maxShield,
               shieldRegen: st.shieldRegen,
               speed: st.speed,
               evasion: st.evasion,
@@ -8409,15 +8715,122 @@
           preset.ships[0].name = `${target.name}·母星旗舰`;
           enemyShipsList = preset.ships;
         }
+        // Add target's armed Base Defense Turret platform if fortified
+        if ((target.baseDefensePower || 0) > 0) {
+          const defLv = Math.max(1, Math.round((target.baseDefensePower || 0) / 350));
+          enemyShipsList.push({
+            name: `${target.baseName}·轨道防御炮台 Lv.${defLv}`,
+            hullId: 'cruiser',
+            hullName: '母星防御堡垒',
+            maxHp: 650 + defLv * 320,
+            armor: 35 + defLv * 8,
+            maxShield: target.shieldIntact === false ? 0 : (300 + defLv * 220),
+            shieldRegen: 12 + defLv * 6,
+            speed: 12,
+            evasion: 2,
+            pdInterceptTotal: 0.25,
+            reactorInstabilityCount: 0,
+            outerArmorProtectedCells: 2,
+            aiRange: 'kiting',
+            aiTarget: 'weapons',
+            heatSink: 50,
+            weapons: [
+              { name: '基地轨道磁轨炮', weaponType: 'railgun', damage: 45 + defLv * 22, fireRate: 0.9, accuracy: 0.92, armorPen: 0.65, shieldMult: 1.2, hullMult: 1.1 }
+            ]
+          });
+        }
         startCombatSimulation({
           title: `攻打玩家基地：${target.name} 的【${target.baseName}】`,
           environment: 'normal',
           targetSystemId: null,
-          targetPlayerId: target.id,
+          targetPlayerId: target.uid || target.id,
           isPlayerLootRaid: true,
           isCrisisBattle: false,
-          enemyShips: preset.ships
+          enemyShips: enemyShipsList
         });
+      });
+
+      document.getElementById('stepGuideRibbon')?.addEventListener('click', (e) => {
+        const jump = e.target.closest('[data-jump-view]');
+        if (jump) {
+          switchView(jump.dataset.jumpView);
+          SoundFX.play('click');
+        }
+      });
+      document.getElementById('btnToggleGuideRibbon')?.addEventListener('click', () => {
+        document.getElementById('stepGuideRibbon').classList.add('hidden');
+      });
+
+      document.getElementById('btnFightAllianceBoss')?.addEventListener('click', () => {
+        if (GameState.fleet.length === 0) {
+          showToast('请先在「舰船网格设计器」建造至少 1 艘舰船再讨伐联盟 BOSS！', 'red');
+          return;
+        }
+        startCombatSimulation({
+          title: '👹 联盟活动：深渊星穹巨兽 BOSS 讨伐战',
+          environment: 'normal',
+          targetSystemId: null,
+          isAllianceBossBattle: true,
+          isCrisisBattle: false,
+          enemyShips: [
+            {
+              name: '深渊星穹巨兽 · 利维坦BOSS',
+              hullId: 'titan',
+              hullName: '世界级泰坦BOSS',
+              maxHp: 9500,
+              armor: 55,
+              maxShield: 3600,
+              shieldRegen: 45,
+              speed: 35,
+              evasion: 8,
+              pdInterceptTotal: 0.35,
+              reactorInstabilityCount: 0,
+              outerArmorProtectedCells: 4,
+              aiRange: 'skirmish',
+              aiTarget: 'weapons',
+              heatSink: 99,
+              weapons: [
+                { name: '虚空聚变主炮', weaponType: 'plasma', damage: 110, fireRate: 0.65, accuracy: 0.85, armorPen: 0.7, shieldMult: 1.1, hullMult: 1.3 },
+                { name: '深渊蜂群导弹', weaponType: 'missile', damage: 55, fireRate: 0.9, accuracy: 0.9, armorPen: 0.4, shieldMult: 1.0, hullMult: 1.2 }
+              ]
+            }
+          ]
+        });
+      });
+
+      document.getElementById('btnBaseActionBorrowShip')?.addEventListener('click', () => {
+        const registry = loadGlobalPlayersRegistry();
+        const target = registry.find(p => p.uid === GameState.selectedPlayerId || p.id === GameState.selectedPlayerId);
+        if (!target || target.uid === GameState.commander?.uid) {
+          showToast('请先在左侧选择一位其他玩家作为盟友借调舰船！', 'amber');
+          return;
+        }
+        if (GameState.fleet.some(f => f.isBorrowedAlly && f.borrowedFrom === target.name)) {
+          showToast(`你已借调了盟友【${target.name}】的援军旗舰，请先出战！`, 'amber');
+          return;
+        }
+        const bp = (Array.isArray(target.customBlueprints) && target.customBlueprints[0])
+          ? target.customBlueprints[0]
+          : GameState.blueprints[0];
+        const stats = evaluateShipBlueprint(bp?.hullId || 'cruiser', bp?.grid || {}, bp?.aiRange, bp?.aiTarget);
+        const sqId = (GameState.activeSquadronId && GameState.activeSquadronId !== 'all')
+          ? GameState.activeSquadronId
+          : (GameState.squadrons?.[0]?.id || 'sq_1');
+        GameState.fleet.push({
+          uid: 'ally_loan_' + Date.now(),
+          name: `[援军·${target.name}] ${bp?.name || '盟友巡洋舰'}`,
+          blueprintName: `[援军] ${bp?.name || '盟友巡洋舰'}`,
+          hullId: bp?.hullId || 'cruiser',
+          squadronId: sqId,
+          isBorrowedAlly: true,
+          borrowedFrom: target.name,
+          stats
+        });
+        SoundFX.play('install');
+        saveToStorage();
+        renderTopBarAndSidebar();
+        addLog(`🤝 同盟互助：已成功向【${target.name}】借调 1 艘旗舰编入我方作战编队！`, 'good');
+        showToast(`🤝 已借调【${target.name}】的援军旗舰加入当前编队！`, 'emerald');
       });
 
       document.getElementById('btnBaseActionSpar').addEventListener('click', () => {
@@ -8518,6 +8931,14 @@
         SoundFX.play('click');
         showToast(`📋 已复制你的专属 UID：${uid}`, 'emerald');
       }
+      document.getElementById('btnClosePvpAlert')?.addEventListener('click', () => document.getElementById('pvpAlertModal').classList.add('hidden'));
+      document.getElementById('btnPvpAlertAck')?.addEventListener('click', () => document.getElementById('pvpAlertModal').classList.add('hidden'));
+      document.getElementById('btnPvpAlertRevenge')?.addEventListener('click', (e) => {
+        const atkUid = e.currentTarget.dataset.attackerUid;
+        document.getElementById('pvpAlertModal').classList.add('hidden');
+        if (atkUid) GameState.selectedPlayerId = atkUid;
+        switchView('players');
+      });
       document.getElementById('btnQuickCopyMyUid')?.addEventListener('click', copyMyUidToClipboard);
       document.getElementById('btnCopyReturningUid')?.addEventListener('click', copyMyUidToClipboard);
 
