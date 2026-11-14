@@ -6688,12 +6688,12 @@
           });
           return;
         }
-        const validBp = GameState.blueprints.find(b => evaluateShipBlueprint(b.hullId, b.grid, b.aiRange, b.aiTarget).canDeploy);
-        if (validBp) {
-          produceShipFromBlueprint(validBp);
-        } else {
-          showToast('当前蓝图电力/算力超载，请点击「⚡ 智能推荐配装」自动平衡后再建造！', 'red');
-        }
+        const reasons = [];
+        if (!curStats.hasWeapons) reasons.push('未安装武器');
+        if (!curStats.powerValid) reasons.push(`电力超载 (${curStats.powerUsed}/${curStats.powerProduced})`);
+        if (!curStats.cpuValid) reasons.push(`算力超载 (${curStats.cpuUsed}/${curStats.cpuProduced})`);
+        const reason = reasons.join('、') || '配置未达标';
+        showToast(`当前蓝图无法建造：${reason}（可点「⚡ 智能推荐配装」一键配好）`, 'red');
       });
       document.getElementById('btnRepairFleet').addEventListener('click', () => {
         SoundFX.play('install');
@@ -7034,10 +7034,10 @@
             }
           }
         }
-        for (let pass = 0; pass < 8; pass++) {
+        for (let pass = 0; pass < 20; pass++) {
           const evalRes = evaluateShipBlueprint(hullId, newGrid, GameState.designer.aiRange, GameState.designer.aiTarget);
           if (evalRes.canDeploy) break;
-          if (evalRes.powerNet < 0) {
+          if (!evalRes.powerValid) {
             const upgradeKey = Object.keys(newGrid).find(k => {
               const [rr, cc] = k.split(',').map(Number);
               const st = hull.layout[rr][cc];
@@ -7047,18 +7047,24 @@
               newGrid[upgradeKey] = structuredClone(findModuleTemplate('reactor_fusion'));
               continue;
             }
-            const wpnKey = Object.keys(newGrid).find(k => newGrid[k].cat === 'weapon');
-            if (wpnKey) { delete newGrid[wpnKey]; continue; }
+            const pdOrDefKey = Object.keys(newGrid).find(k => newGrid[k].id === 'def_pd' || newGrid[k].id === 'def_shield');
+            if (pdOrDefKey) { delete newGrid[pdOrDefKey]; continue; }
+            const wpnKeys = Object.keys(newGrid).filter(k => newGrid[k].weaponType || newGrid[k].category === 'weapon');
+            if (wpnKeys.length > 1) { delete newGrid[wpnKeys[wpnKeys.length - 1]]; continue; }
           }
-          if (evalRes.cpuNet < 0) {
+          if (!evalRes.cpuValid) {
             const cKey = Object.keys(newGrid).find(k => {
               const [rr, cc] = k.split(',').map(Number);
-              return (hull.layout[rr][cc] === 'C' || hull.layout[rr][cc] === 'U') && newGrid[k].id !== 'cpu_quantum';
+              return (hull.layout[rr][cc] === 'C' || hull.layout[rr][cc] === 'U') && newGrid[k].id !== 'cpu_quantum' && newGrid[k].id !== 'reactor_fusion';
             });
             if (cKey) {
               newGrid[cKey] = structuredClone(findModuleTemplate('cpu_quantum'));
               continue;
             }
+            const trimKey = Object.keys(newGrid).find(k => newGrid[k].id === 'def_pd' || newGrid[k].id === 'def_armor');
+            if (trimKey) { delete newGrid[trimKey]; continue; }
+            const wpnKeys = Object.keys(newGrid).filter(k => newGrid[k].weaponType || newGrid[k].category === 'weapon');
+            if (wpnKeys.length > 1) { delete newGrid[wpnKeys[wpnKeys.length - 1]]; continue; }
           }
           break;
         }
