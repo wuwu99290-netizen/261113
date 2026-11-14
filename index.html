@@ -923,8 +923,8 @@
         <div class="cyber-panel rounded-lg p-3 space-y-2.5">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h2 class="text-sm font-bold text-cyan-300">🌐 真人玩家星际雷达与实时排行榜 (已清除所有人机)</h2>
-              <p class="text-xs text-slate-400">仅收录真实玩家档案！支持同浏览器多标签页实时同步，或通过「基地联机码」导入好友/其他设备玩家的真实基地与舰队。</p>
+              <h2 class="text-sm font-bold text-cyan-300">🌐 星际玩家雷达、异步PVP与全服排行榜</h2>
+              <p class="text-xs text-slate-400">支持同浏览器多标签实时同步、基地联机码导入，以及绑定 Firebase Realtime Database 实现真正跨设备按 UID 写入与异步 PVP 战损收发。</p>
             </div>
             <div class="flex flex-wrap items-center gap-1.5">
               <input id="playerSearchInput" type="text" placeholder="输入玩家专属 UID (如 SF-802914) 或姓名/势力名搜索..." class="bg-slate-900 border border-cyan-500/50 rounded px-2.5 py-1.5 text-xs text-white w-64 focus:outline-none focus:border-cyan-300" />
@@ -938,8 +938,8 @@
           <div class="pt-2 border-t border-slate-800/90 space-y-2 text-xs">
             <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-950/90 border border-emerald-500/40 rounded-lg px-3 py-1.5">
               <div class="flex items-center gap-2">
-                <span id="cloudStatusDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span id="cloudStatusText" class="text-emerald-300 font-bold mono">☁️ 银河云端同服数据库：实时同步中 (支持跨手机/电脑自动同步全服玩家)</span>
+                <span id="cloudStatusDot" class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                <span id="cloudStatusText" class="text-amber-300 font-bold mono">📡 本地多标签 & 联机码模式（点击右侧⚙️填入 Firebase 地址即解锁跨设备真联机）</span>
               </div>
               <div class="flex items-center gap-1.5">
                 <button id="btnForceCloudSync" class="cyber-btn px-2.5 py-1 rounded text-[11px] font-bold">🔄 立即同步全服榜</button>
@@ -948,10 +948,13 @@
             </div>
 
             <!-- Optional Custom Cloud REST Endpoint (Firebase / Supabase / Custom JSON Endpoint) -->
-            <div id="customCloudConfigBox" class="hidden bg-slate-900/95 border border-cyan-500/40 rounded-lg p-2.5 flex flex-wrap items-center gap-2">
-              <span class="text-[11px] text-cyan-300 font-semibold shrink-0">专属云端REST地址 (支持 Firebase/KV)：</span>
-              <input id="customCloudUrlInput" type="text" placeholder="默认已内置全球公共云服，也可填入你自己的 https://xxx.firebaseio.com/starforge.json" class="flex-1 min-w-[220px] bg-slate-950 border border-slate-700 rounded px-2.5 py-1 text-xs text-white mono" />
-              <button id="btnSaveCloudUrl" class="cyber-btn-amber px-3 py-1 rounded text-xs font-bold">保存并重连</button>
+            <div id="customCloudConfigBox" class="hidden bg-slate-900/95 border border-cyan-500/40 rounded-lg p-2.5 space-y-1.5">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-[11px] text-cyan-300 font-semibold shrink-0">Firebase Realtime DB 根地址：</span>
+                <input id="customCloudUrlInput" type="text" placeholder="例如: https://your-project-default-rtdb.firebaseio.com" class="flex-1 min-w-[220px] bg-slate-950 border border-slate-700 rounded px-2.5 py-1 text-xs text-white mono" />
+                <button id="btnSaveCloudUrl" class="cyber-btn-amber px-3 py-1 rounded text-xs font-bold">保存并重连</button>
+              </div>
+              <p class="text-[10px] text-slate-400">说明：接入后将按玩家 UID 分键写入 (<code class="text-cyan-300">/players/{uid}.json</code>) 防并发覆盖，并通过 <code class="text-purple-300">/inbox/{uid}.json</code> 收发异步 PVP 掠夺战报。</p>
             </div>
 
             <div class="flex flex-wrap items-center justify-between gap-2">
@@ -2065,6 +2068,7 @@
 
     const INITIAL_PLAYED_COMMANDERS = [
       {
+        isDemoSeed: true,
         id: 'player_hof_1',
         uid: 'SF-802914',
         onboardingCompleted: true,
@@ -2090,6 +2094,7 @@
         bio: '【UID: SF-802914】破晓星辰帝国缔造者，擅长反物质反应堆+双联电浆重炮贴脸融甲战术。'
       },
       {
+        isDemoSeed: true,
         id: 'player_hof_2',
         uid: 'SF-519042',
         onboardingCompleted: true,
@@ -2115,6 +2120,7 @@
         bio: '【UID: SF-519042】极限堆叠液氦散热器与偏折护盾的教材级防御玩家，导弹极难突破其防线。'
       },
       {
+        isDemoSeed: true,
         id: 'player_hof_3',
         uid: 'SF-337819',
         onboardingCompleted: true,
@@ -2140,6 +2146,7 @@
         bio: '【UID: SF-337819】坐拥多处富矿星系与先驱者遗迹，基地金库储量居全服前列。'
       },
       {
+        isDemoSeed: true,
         id: 'player_hof_4',
         uid: 'SF-940125',
         onboardingCompleted: true,
@@ -2165,6 +2172,7 @@
         bio: '【UID: SF-940125】全服掠夺胜场最高的进攻型玩家，弹药库紧邻磁轨炮，爆发力极强。'
       },
       {
+        isDemoSeed: true,
         id: 'player_hof_5',
         uid: 'SF-612088',
         onboardingCompleted: true,
@@ -2190,6 +2198,7 @@
         bio: '【UID: SF-612088】主打外层全反应装甲带的重装玩家，吸收穿甲伤害能力出众。'
       },
       {
+        isDemoSeed: true,
         id: 'player_hof_6',
         uid: 'SF-204973',
         onboardingCompleted: true,
@@ -4814,6 +4823,15 @@
                 targetP.loot.crystal = Math.max(50, targetP.loot.crystal - cLoot);
               }
               saveGlobalPlayersRegistry(registry);
+              if (targetP.uid) {
+                pushAsyncPvpRaidToInbox(targetP.uid, {
+                  attackerName: GameState.commander?.name || '未知指挥官',
+                  attackerUid: GameState.commander?.uid || '',
+                  lootMetal: mLoot,
+                  lootCrystal: cLoot,
+                  timestamp: Date.now()
+                });
+              }
 
               const allAccounts = loadAllAccountStates();
               const defKey = (targetP.name || '').toLowerCase();
@@ -5422,18 +5440,20 @@
       return list;
     }
 
-    const DEFAULT_CLOUD_API_URL = 'https://kvdb.io/A6Xy9mK4p2Qv8Zr5Wt3N1B/starforge_hegemony_players_v2';
     const CUSTOM_CLOUD_URL_KEY = 'STARFORGE_CUSTOM_CLOUD_API_URL_V1';
     let lastCloudSyncTime = 0;
     let isCloudSyncing = false;
+    let cloudSyncIntervalId = null;
     const starforgeBroadcast = (typeof BroadcastChannel !== 'undefined') ? new BroadcastChannel('starforge_multiplayer_sync') : null;
 
-    function getActiveCloudApiUrl() {
+    function getFirebaseBaseUrl() {
       try {
-        const custom = localStorage.getItem(CUSTOM_CLOUD_URL_KEY);
-        if (custom && custom.startsWith('https://')) return custom.trim();
+        const custom = (localStorage.getItem(CUSTOM_CLOUD_URL_KEY) || '').trim();
+        if (custom && custom.startsWith('https://')) {
+          return custom.replace(/\/+$/, '').replace(/\.json$/, '');
+        }
       } catch (e) {}
-      return DEFAULT_CLOUD_API_URL;
+      return '';
     }
 
     function updateCloudStatusUI(state, msg) {
@@ -5446,6 +5466,9 @@
       } else if (state === 'syncing') {
         dot.className = 'w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping';
         txt.className = 'text-cyan-300 font-bold mono';
+      } else if (state === 'error') {
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500';
+        txt.className = 'text-rose-300 font-bold mono';
       } else {
         dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400';
         txt.className = 'text-amber-300 font-bold mono';
@@ -5459,10 +5482,9 @@
         if (!p || !p.name) return;
         const key = (p.uid || p.name).toLowerCase();
         const existing = map.get(key);
-        if (!existing || (p.lastPlayedAt || 0) >= (existing.lastPlayedAt || 0) || (p.score || 0) > (existing.score || 0)) {
-          // Strip huge base64 avatars before cloud sync if over 8KB so cloud payload stays fast
+        if (!existing || (p.lastPlayedAt || 0) > (existing.lastPlayedAt || 0)) {
           const copy = { ...p };
-          if (copy.customAvatarDataUrl && copy.customAvatarDataUrl.length > 12000 && existing?.customAvatarDataUrl) {
+          if (!copy.customAvatarDataUrl && existing?.customAvatarDataUrl) {
             copy.customAvatarDataUrl = existing.customAvatarDataUrl;
           }
           map.set(key, copy);
@@ -5473,63 +5495,102 @@
       return Array.from(map.values());
     }
 
+    async function pushAsyncPvpRaidToInbox(targetUid, raidPayload) {
+      const baseUrl = getFirebaseBaseUrl();
+      if (!baseUrl || !targetUid) return false;
+      try {
+        const raidId = 'raid_' + Date.now();
+        const res = await fetch(`${baseUrl}/inbox/${encodeURIComponent(targetUid)}/${raidId}.json`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(raidPayload)
+        });
+        return res.ok;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    async function processMyAsyncPvpInbox(baseUrl) {
+      const myUid = GameState.commander?.uid;
+      if (!baseUrl || !myUid) return;
+      try {
+        const res = await fetch(`${baseUrl}/inbox/${encodeURIComponent(myUid)}.json`);
+        if (!res.ok) return;
+        const inboxObj = await res.json();
+        if (!inboxObj || typeof inboxObj !== 'object') return;
+
+        let changed = false;
+        for (const [raidId, raid] of Object.entries(inboxObj)) {
+          if (!raid || raid.processed) continue;
+          const mLoss = Math.min(GameState.resources.metal, raid.lootMetal || 0);
+          const cLoss = Math.min(GameState.resources.crystal, raid.lootCrystal || 0);
+          GameState.resources.metal -= mLoss;
+          GameState.resources.crystal -= cLoss;
+          if (GameState.fleet.length > 1) GameState.fleet.pop();
+          GameState.commander.losses = (GameState.commander.losses || 0) + 1;
+          addLog(`🚨 【异步PVP警报】你离线期间遭玩家「${raid.attackerName} (${raid.attackerUid})」强袭基地！损失 ⚙️${mLoss} 💎${cLoss} 及 1 艘护航舰！`, 'combat');
+          showToast(`🚨 离线期间遭 ${raid.attackerName} 突袭，损失 ⚙️${mLoss} 💎${cLoss}！`, 'red');
+          changed = true;
+        }
+        if (changed) {
+          // Clear processed inbox
+          await fetch(`${baseUrl}/inbox/${encodeURIComponent(myUid)}.json`, { method: 'DELETE' });
+          saveToStorage();
+          renderTopBarAndSidebar();
+        }
+      } catch (e) {}
+    }
+
     async function syncWithCloudLeaderboard(forcePush = false) {
+      const baseUrl = getFirebaseBaseUrl();
+      const localList = loadGlobalPlayersRegistry();
+      if (!baseUrl) {
+        updateCloudStatusUI('local', `📡 本地多标签 & 联机码模式（在榜 ${localList.length} 人 · 点击⚙️绑定 Firebase 即开跨设备真联机）`);
+        return;
+      }
       if (isCloudSyncing) return;
       const now = Date.now();
       if (!forcePush && now - lastCloudSyncTime < 4500) return;
       isCloudSyncing = true;
       lastCloudSyncTime = now;
 
-      const url = getActiveCloudApiUrl();
-      updateCloudStatusUI('syncing', '☁️ 正在与银河云端服务器同步全服玩家排行榜...');
+      updateCloudStatusUI('syncing', '☁️ 正在按 UID 同步云端数据库与异步 PVP 战报...');
 
       try {
-        // 1. Fetch latest global player list from cloud
-        let remoteList = [];
-        try {
-          const getRes = await fetch(url, {
-            method: 'GET',
-            headers: { 'Accept': 'application/json' }
+        // 1. GET /players.json (read full players map)
+        const getRes = await fetch(`${baseUrl}/players.json`, { method: 'GET' });
+        if (!getRes.ok) throw new Error('HTTP ' + getRes.status);
+        const rawData = await getRes.json();
+        const remoteList = rawData
+          ? (Array.isArray(rawData) ? rawData : Object.values(rawData))
+          : [];
+
+        // 2. PUT /players/{myUid}.json (Write ONLY current player's own record so concurrent players NEVER overwrite each other!)
+        const myUid = GameState.commander?.uid;
+        const myRecord = localList.find(p => p.uid === myUid);
+        if (myRecord && myUid && GameState.commander?.onboardingCompleted) {
+          const compactMine = {
+            ...myRecord,
+            isDemoSeed: false,
+            customAvatarDataUrl: (myRecord.customAvatarDataUrl && myRecord.customAvatarDataUrl.length < 15000) ? myRecord.customAvatarDataUrl : ''
+          };
+          await fetch(`${baseUrl}/players/${encodeURIComponent(myUid)}.json`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(compactMine)
           });
-          if (getRes.ok) {
-            const data = await getRes.json();
-            if (Array.isArray(data)) remoteList = data;
-            else if (data && Array.isArray(data.players)) remoteList = data.players;
-          }
-        } catch (getErr) {
-          // Bucket key may not exist on first write yet
         }
 
-        // 2. Merge local + remote players
-        const localList = loadGlobalPlayersRegistry();
+        // 3. Process any incoming async PVP raids targeting us
+        await processMyAsyncPvpInbox(baseUrl);
+
+        // 4. Merge remote players with local list
         const merged = mergePlayerLists(localList, remoteList);
-
-        // Save merged list locally
-        try {
-          localStorage.setItem(GLOBAL_PLAYERS_KEY, JSON.stringify(merged));
-        } catch (e) {}
-
-        // 3. Push merged list (with compact payload) back to cloud so all other players see us!
-        const compactForCloud = merged.slice(0, 60).map(p => ({
-          ...p,
-          // Keep custom avatar only if compact thumbnail so cloud request never exceeds size limits
-          customAvatarDataUrl: (p.customAvatarDataUrl && p.customAvatarDataUrl.length < 15000) ? p.customAvatarDataUrl : ''
-        }));
-
-        const putRes = await fetch(url, {
-          method: url.includes('firebaseio.com') ? 'PUT' : 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(compactForCloud)
-        });
-
-        if (putRes.ok) {
-          updateCloudStatusUI('online', `☁️ 云端联机已连接 · 全服实时在榜 ${merged.length} 名玩家 (最新同步: ${new Date().toLocaleTimeString()})`);
-        } else {
-          updateCloudStatusUI('local', `📡 本地多端/联机码模式运行中 · 全服在榜 ${merged.length} 名玩家`);
-        }
+        saveGlobalPlayersRegistry(merged);
+        updateCloudStatusUI('online', `☁️ Firebase 云端已连接 · 全服 ${merged.length} 人 (按UID分键防覆盖 · ${new Date().toLocaleTimeString()})`);
       } catch (err) {
-        const localCount = loadGlobalPlayersRegistry().length;
-        updateCloudStatusUI('local', `📡 本地多窗口/联机码同步中 · 在榜 ${localCount} 名玩家 (可点击⚙️配置自定义云服)`);
+        updateCloudStatusUI('error', `🔴 云端连接失败 (${err.message || '网络/权限错误'}) · 已切换本地模式`);
       } finally {
         isCloudSyncing = false;
       }
@@ -5680,7 +5741,8 @@
         renderEmpireView();
         renderTopBarAndSidebar();
       });
-      setInterval(() => {
+      if (cloudSyncIntervalId) clearInterval(cloudSyncIntervalId);
+      cloudSyncIntervalId = setInterval(() => {
         syncWithCloudLeaderboard(false);
       }, 15000);
       renderPlayersView();
@@ -5945,7 +6007,7 @@
                   <div class="flex items-center gap-1.5">
                     <span class="text-xs font-bold ${isMe ? 'text-amber-300' : 'text-white'} truncate">${p.name}</span>
                     <span class="text-[10px] px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 mono">${p.uid || 'UID'}</span>
-                    ${isMe ? '<span class="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 mono">我方</span>' : ''}
+                    ${isMe ? '<span class="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 mono">我方</span>' : (p.isDemoSeed ? '<span class="text-[9px] px-1.5 py-0.2 rounded bg-slate-700 text-slate-300 mono">演示对手</span>' : '<span class="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 mono">真人玩家</span>')}
                   </div>
                   <div class="text-[10px] text-slate-400 mono truncate">势力: ${p.factionName || '星际同盟'} · ${isMe || (GameState.playerSearchQuery || '').trim() ? `基地: ${p.baseName} ${p.coords}` : '🔒 坐标隐蔽 (需输入姓名或UID搜索定位)'}</div>
                 </div>
@@ -6826,7 +6888,7 @@
           environment: 'normal',
           targetSystemId: null,
           isCrisisBattle: false,
-          enemyShips: preset.ships
+          enemyShips: enemyShipsList
         });
       });
 
@@ -7444,8 +7506,35 @@
         const target = registry.find(p => p.id === GameState.selectedPlayerId);
         if (!target || target.id === GameState.commander?.id) return;
         const scale = Math.max(0.65, (target.fleetPower / 1850) * (target.shieldIntact === false ? 0.75 : 1.0));
-        const preset = createEnemyPresetFleet(target.presetType || 'pirate', scale);
-        preset.ships[0].name = `${target.name}·母星旗舰`;
+        let enemyShipsList = [];
+        if (Array.isArray(target.customBlueprints) && target.customBlueprints.length > 0) {
+          enemyShipsList = target.customBlueprints.slice(0, 2).map((bp, i) => {
+            const st = evaluateShipBlueprint(bp.hullId || 'cruiser', bp.grid || {}, bp.aiRange, bp.aiTarget);
+            return {
+              name: `${target.name}·${bp.name}`,
+              hullId: bp.hullId || 'cruiser',
+              hullName: st.hullName,
+              gridMap: bp.grid || null,
+              maxHp: Math.round(st.maxHp * (target.shieldIntact === false ? 0.75 : 1.0)),
+              armor: st.armor,
+              maxShield: st.maxShield,
+              shieldRegen: st.shieldRegen,
+              speed: st.speed,
+              evasion: st.evasion,
+              pdInterceptTotal: st.pdInterceptTotal,
+              reactorInstabilityCount: st.reactorInstabilityCount,
+              outerArmorProtectedCells: st.outerArmorProtectedCells,
+              aiRange: st.aiRange,
+              aiTarget: st.aiTarget,
+              heatSink: st.heatSink,
+              weapons: st.weapons.length > 0 ? st.weapons : createEnemyPresetFleet('pirate', scale).ships[0].weapons
+            };
+          });
+        } else {
+          const preset = createEnemyPresetFleet(target.presetType || 'pirate', scale);
+          preset.ships[0].name = `${target.name}·母星旗舰`;
+          enemyShipsList = preset.ships;
+        }
         startCombatSimulation({
           title: `攻打玩家基地：${target.name} 的【${target.baseName}】`,
           environment: 'normal',
