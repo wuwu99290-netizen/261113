@@ -191,6 +191,7 @@
           <div id="topCommanderRank" class="text-[10px] text-amber-300 mono">未登榜 · ✏️ 改名/换头像</div>
         </div>
       </button>
+      <button id="btnQuickCopyMyUid" type="button" class="cyber-btn px-2 py-1 rounded text-[11px] mono font-bold shrink-0" title="一键复制我的专属 UID">📋 复制UID</button>
 
       <!-- Crisis Banner Mini -->
       <div id="topCrisisBadge" class="hidden md:flex items-center gap-2 px-2.5 py-1 rounded bg-rose-950/80 border border-rose-500/60 text-xs crisis-pulse cursor-pointer">
@@ -1213,7 +1214,10 @@
         <div id="returningCommanderCard" class="hidden cyber-panel-amber rounded-xl p-4 text-left space-y-3">
           <div class="flex items-center justify-between">
             <span class="text-xs font-bold text-emerald-300">✅ 检测到已完美授勋的指挥官档案（无需重复教程与起名）</span>
-            <span id="returningUidBadge" class="text-xs mono px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-200 border border-cyan-400/40">UID: SF-000000</span>
+            <div class="flex items-center gap-1.5">
+              <span id="returningUidBadge" class="text-xs mono px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-200 border border-cyan-400/40">UID: SF-000000</span>
+              <button id="btnCopyReturningUid" type="button" class="cyber-btn px-2 py-0.5 rounded text-[11px] font-bold">📋 复制</button>
+            </div>
           </div>
           <div class="flex items-center justify-between gap-3 bg-slate-950/80 p-3 rounded-lg border border-slate-800">
             <div class="flex items-center gap-3">
@@ -8495,6 +8499,28 @@
       });
 
       // Cross-device Real Player Sync Code Export & Import
+      function copyMyUidToClipboard() {
+        const uid = GameState.commander?.uid;
+        if (!uid) {
+          showToast('你还未完成起名授勋，暂无 UID！', 'amber');
+          return;
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(uid).catch(() => {});
+        } else {
+          const ta = document.createElement('textarea');
+          ta.value = uid;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          ta.remove();
+        }
+        SoundFX.play('click');
+        showToast(`📋 已复制你的专属 UID：${uid}`, 'emerald');
+      }
+      document.getElementById('btnQuickCopyMyUid')?.addEventListener('click', copyMyUidToClipboard);
+      document.getElementById('btnCopyReturningUid')?.addEventListener('click', copyMyUidToClipboard);
+
       document.getElementById('btnCopyMySyncCode').addEventListener('click', () => {
         syncCurrentCommanderToGlobalRegistry();
         const registry = loadGlobalPlayersRegistry();
