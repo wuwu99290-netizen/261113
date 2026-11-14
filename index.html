@@ -285,6 +285,9 @@
         </button>
       </div>
       <div class="flex items-center gap-1.5">
+        <button id="btnOpenBaseArmamentModal" type="button" class="cyber-btn px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 border-amber-400/60 text-amber-200">
+          <span>🏰 武装基地</span>
+        </button>
         <button id="btnToggleFleetDrawer" type="button" class="cyber-btn px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1">
           <span>🚀 舰队编组</span>
           <span id="fleetDrawerCountBadge" class="text-[10px] mono text-amber-300">0</span>
@@ -1178,9 +1181,9 @@
 
             <!-- Interactive Operations on Target Player Base (Heavy PVP Focus) -->
             <div class="pt-2 border-t border-slate-800 grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-              <button id="btnBaseActionAttack" class="cyber-btn-red py-2 px-2 rounded text-xs font-extrabold shadow">⚔️ 强袭攻打基地</button>
+              <button id="btnBaseActionAttack" class="cyber-btn-red py-2 px-2 rounded text-xs font-extrabold shadow">⚔️ 真实远征攻打 (需10分钟)</button>
               <button id="btnBaseActionUltimatum" class="cyber-btn-amber py-2 px-2 rounded text-xs font-bold">📜 发送最后通牒索贡</button>
-              <button id="btnBaseActionSpar" class="cyber-btn py-2 px-2 rounded text-xs font-semibold">🎯 战术切磋演练</button>
+              <button id="btnBaseActionSpar" class="cyber-btn py-2 px-2 rounded text-xs font-semibold">🎯 模拟演习切磋 (0战损)</button>
               <button id="btnBaseActionScout" class="cyber-btn py-1.5 px-2 rounded text-xs">🛰️ 深度侦察蓝图</button>
               <button id="btnBaseActionSabotage" class="cyber-btn py-1.5 px-2 rounded text-xs">💣 特工瘫痪护盾</button>
               <button id="btnBaseActionGift" class="cyber-btn py-1.5 px-2 rounded text-xs">🎁 赠送晶体结交</button>
@@ -1582,6 +1585,26 @@
       <!-- 3 Treaty Clauses to Choose From -->
       <div class="space-y-2" id="treatyOptionsContainer">
         <!-- Populated dynamically by JS based on Victory (Impose Terms) or Defeat (Sue for Peace) -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Dedicated Base Armament Modal (1-Click Access from Big Map) -->
+  <div id="baseArmamentModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="cyber-panel max-w-2xl w-full rounded-xl p-4 border-2 border-amber-400/60 shadow-2xl space-y-3 max-h-[85vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+        <div>
+          <span class="text-sm font-extrabold text-amber-300">🏰 武装我的母星基地（实时限时建造）</span>
+          <span id="modalBaseDefPowerBadge" class="ml-2 text-xs mono text-emerald-300 font-bold">基地防卫战力: 700</span>
+        </div>
+        <button id="btnCloseBaseArmamentModal" type="button" class="text-slate-400 hover:text-white text-sm px-2">✕ 关闭</button>
+      </div>
+      <div id="modalBaseBuildQueueBanner" class="hidden p-2 rounded bg-cyan-950/60 border border-cyan-400/50 text-xs text-cyan-200 mono flex items-center justify-between">
+        <span id="modalBaseBuildQueueText">🔨 正在建造...</span>
+        <span id="modalBaseBuildQueueEta" class="text-amber-300 font-bold">剩余 0s</span>
+      </div>
+      <div id="modalBaseDefenseGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <!-- Populated by JS -->
       </div>
     </div>
   </div>
@@ -4642,6 +4665,7 @@
       CombatSim.isPlayerLootRaid = !!config.isPlayerLootRaid;
       CombatSim.isCrisisBattle = !!config.isCrisisBattle;
       CombatSim.isAllianceBossBattle = !!config.isAllianceBossBattle;
+      CombatSim.isSimulationSpar = !!config.isSimulationSpar;
       CombatSim.projectiles = [];
       CombatSim.allies.forEach(ally => {
         const dCnt = ally.droneCount || 0;
@@ -5533,8 +5557,8 @@
           if (targetP) {
             // 1. Synchronize Mutual Damage to Attacker (our lost ships are destroyed or damaged)
             const survivingRatio = CombatSim.allies.filter(a => a.hp > 0).length / Math.max(1, CombatSim.allies.length);
-            const lostShipsCount = CombatSim.allies.filter(a => a.hp <= 0).length;
-            if (lostShipsCount > 0 && GameState.fleet.length > 1) {
+            const lostShipsCount = CombatSim.isSimulationSpar ? 0 : CombatSim.allies.filter(a => a.hp <= 0).length;
+            if (!CombatSim.isSimulationSpar && lostShipsCount > 0 && GameState.fleet.length > 1) {
               GameState.fleet.splice(0, Math.min(lostShipsCount, GameState.fleet.length - 1));
             }
 
@@ -6023,6 +6047,10 @@
           </div>
         `;
       }).join('');
+      const baseGridEl = document.getElementById('myBaseDefenseGrid');
+      if (baseGridEl) baseGridEl.innerHTML = cardsHtml;
+      const mGrid = document.getElementById('modalBaseDefenseGrid');
+      if (mGrid) mGrid.innerHTML = cardsHtml;
     }
 
     function renderEmpireView() {
@@ -7027,9 +7055,19 @@
       const defPow = getMyBaseDefensePower();
       const powEl = document.getElementById('myBaseDefensePowerBadge');
       if (powEl) powEl.textContent = `基地防卫战力: ${defPow}`;
-      const grid = document.getElementById('myBaseDefenseGrid');
-      if (!grid) return;
-      grid.innerHTML = BASE_DEFENSE_DEFS.map(def => {
+      const mPow = document.getElementById('modalBaseDefPowerBadge');
+      if (mPow) mPow.textContent = `基地防卫战力: ${defPow}`;
+      const mBanner = document.getElementById('modalBaseBuildQueueBanner');
+      const mText = document.getElementById('modalBaseBuildQueueText');
+      const mEta = document.getElementById('modalBaseBuildQueueEta');
+      if (mBanner && GameState.baseBuildQueue && GameState.baseBuildQueue.finishAt > Date.now()) {
+        mBanner.classList.remove('hidden');
+        if (mText) mText.textContent = `🔨 正在建造：${GameState.baseBuildQueue.name} Lv.${GameState.baseBuildQueue.targetLv}`;
+        if (mEta) mEta.textContent = `剩余 ${Math.ceil((GameState.baseBuildQueue.finishAt - Date.now()) / 1000)}s`;
+      } else if (mBanner) {
+        mBanner.classList.add('hidden');
+      }
+      const cardsHtml = BASE_DEFENSE_DEFS.map(def => {
         const lv = GameState.baseDefenses[def.id] || 0;
         const mCost = Math.round(def.costMetal * (1 + lv * 0.45));
         const cCost = Math.round(def.costCrystal * (1 + lv * 0.45));
@@ -7320,8 +7358,11 @@
           syncCurrentCommanderToGlobalRegistry();
           if (!document.getElementById('view-players').classList.contains('hidden')) renderPlayersView();
         } else {
+          const remTxt = `剩余 ${Math.ceil((GameState.baseBuildQueue.finishAt - Date.now()) / 1000)}s`;
           const qEta = document.getElementById('baseBuildQueueEta');
-          if (qEta) qEta.textContent = `剩余 ${Math.ceil((GameState.baseBuildQueue.finishAt - Date.now()) / 1000)}s`;
+          if (qEta) qEta.textContent = remTxt;
+          const mqEta = document.getElementById('modalBaseBuildQueueEta');
+          if (mqEta) mqEta.textContent = remTxt;
         }
       }
 
@@ -8933,6 +8974,54 @@
       });
 
       // 6 Player Base Interactive Actions
+      document.getElementById('btnOpenBaseArmamentModal')?.addEventListener('click', () => {
+        renderMyBaseArmamentPanel(true);
+        document.getElementById('baseArmamentModal')?.classList.remove('hidden');
+        SoundFX.play('click');
+      });
+      document.getElementById('btnCloseBaseArmamentModal')?.addEventListener('click', () => {
+        document.getElementById('baseArmamentModal')?.classList.add('hidden');
+      });
+      const handleBaseUpgradeClick = (e) => {
+        const btn = e.target.closest('[data-upgrade-base-def]');
+        if (!btn) return;
+        const id = btn.dataset.upgradeBaseDef;
+        const def = BASE_DEFENSE_DEFS.find(d => d.id === id);
+        if (!def) return;
+        if (!GameState.baseDefenses) GameState.baseDefenses = { turret: 1, shield: 1, droneDock: 0, antimatter: 0 };
+        const lv = GameState.baseDefenses[id] || 0;
+        if (lv >= 5) return;
+        const mCost = Math.round(def.costMetal * (1 + lv * 0.45));
+        const cCost = Math.round(def.costCrystal * (1 + lv * 0.45));
+        if (GameState.resources.metal < mCost || GameState.resources.crystal < cCost) {
+          SoundFX.play('error');
+          showToast(`资源不足！武装【${def.name}】需要 ⚙️${mCost} 金属、💎${cCost} 晶体`, 'red');
+          return;
+        }
+        if (GameState.baseBuildQueue && Date.now() < GameState.baseBuildQueue.finishAt) {
+          const rem = Math.ceil((GameState.baseBuildQueue.finishAt - Date.now()) / 1000);
+          showToast(`已有工程正在建造【${GameState.baseBuildQueue.name}】，还剩 ${rem} 秒！`, 'amber');
+          return;
+        }
+        GameState.resources.metal -= mCost;
+        GameState.resources.crystal -= cCost;
+        const buildSec = 15 + lv * 10;
+        GameState.baseBuildQueue = {
+          id,
+          name: def.name,
+          targetLv: lv + 1,
+          startedAt: Date.now(),
+          finishAt: Date.now() + buildSec * 1000
+        };
+        SoundFX.play('install');
+        saveToStorage();
+        renderTopBarAndSidebar();
+        renderMyBaseArmamentPanel(true);
+        if (!document.getElementById('view-players').classList.contains('hidden')) renderPlayersView();
+        addLog(`🔨 母星工程队列启动：正在建造【${def.name} Lv.${lv + 1}】，预计耗时 ${buildSec} 秒。`, 'info');
+        showToast(`🔨 开始建造【${def.name} Lv.${lv + 1}】，预计 ${buildSec} 秒完成！`, 'cyan');
+      };
+      document.getElementById('modalBaseDefenseGrid')?.addEventListener('click', handleBaseUpgradeClick);
       document.getElementById('myBaseDefenseGrid')?.addEventListener('click', (e) => {
         const btn = e.target.closest('[data-upgrade-base-def]');
         if (!btn) return;
@@ -8990,11 +9079,15 @@
         }
         const scale = Math.max(0.65, (target.fleetPower / 1850) * (target.shieldIntact === false ? 0.75 : 1.0));
         let enemyShipsList = [];
-        if (Array.isArray(target.customBlueprints) && target.customBlueprints.length > 0) {
-          enemyShipsList = target.customBlueprints.slice(0, 2).map((bp, i) => {
+        const desiredCount = (target.homeFleetCount !== undefined)
+          ? Math.min(10, Math.max(0, target.homeFleetCount))
+          : Math.min(8, Math.max(1, Math.round((target.fleetPower || 1800) / 1400)));
+        if (desiredCount > 0 && Array.isArray(target.customBlueprints) && target.customBlueprints.length > 0) {
+          for (let i = 0; i < desiredCount; i++) {
+            const bp = target.customBlueprints[i % target.customBlueprints.length];
             const st = evaluateShipBlueprint(bp.hullId || 'cruiser', bp.grid || {}, bp.aiRange, bp.aiTarget);
-            return {
-              name: `${target.name}·${bp.name}`,
+            enemyShipsList.push({
+              name: `${target.name}·${bp.name}#${i + 1}`,
               hullId: bp.hullId || 'cruiser',
               hullName: st.hullName,
               gridMap: bp.grid || null,
@@ -9011,12 +9104,15 @@
               aiTarget: st.aiTarget,
               heatSink: st.heatSink,
               weapons: st.weapons.length > 0 ? st.weapons : createEnemyPresetFleet('pirate', scale).ships[0].weapons
-            };
-          });
-        } else {
+            });
+          }
+        } else if (desiredCount > 0) {
           const preset = createEnemyPresetFleet(target.presetType || 'pirate', scale);
-          preset.ships[0].name = `${target.name}·母星旗舰`;
-          enemyShipsList = preset.ships;
+          for (let i = 0; i < desiredCount; i++) {
+            const baseShip = structuredClone(preset.ships[i % preset.ships.length]);
+            baseShip.name = `${target.name}·护卫舰队#${i + 1}`;
+            enemyShipsList.push(baseShip);
+          }
         }
         // Add target's armed Base Defense Turret platform if fortified
         if ((target.baseDefensePower || 0) > 0) {
