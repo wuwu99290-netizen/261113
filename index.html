@@ -953,6 +953,7 @@
                 <span class="text-[11px] text-cyan-300 font-semibold shrink-0">Firebase Realtime DB 根地址：</span>
                 <input id="customCloudUrlInput" type="text" placeholder="例如: https://your-project-default-rtdb.firebaseio.com" class="flex-1 min-w-[220px] bg-slate-950 border border-slate-700 rounded px-2.5 py-1 text-xs text-white mono" />
                 <button id="btnSaveCloudUrl" class="cyber-btn-amber px-3 py-1 rounded text-xs font-bold">保存并重连</button>
+                <button id="btnCopyFirebaseRules" class="cyber-btn px-2.5 py-1 rounded text-xs font-semibold" title="复制可直接粘贴到 Firebase Realtime Database 规则页的 JSON">📋 复制安全规则</button>
               </div>
               <p class="text-[10px] text-slate-400">说明：接入后将按玩家 UID 分键写入 (<code class="text-cyan-300">/players/{uid}.json</code>) 防并发覆盖，并通过 <code class="text-purple-300">/inbox/{uid}.json</code> 收发异步 PVP 掠夺战报。</p>
             </div>
@@ -5321,11 +5322,17 @@
       }
     ];
 
+    function escapeHtml(str) {
+      return String(str ?? '').replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[c]));
+    }
+
     function renderAvatarContent(avatarIcon, customDataUrl, imgClass = 'w-full h-full object-cover rounded') {
-      if (customDataUrl && customDataUrl.startsWith('data:image/')) {
-        return `<img src="${customDataUrl}" alt="头像" class="${imgClass}" />`;
+      if (customDataUrl && /^data:image\/(png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+/=]+$/i.test(customDataUrl)) {
+        return `<img src="${customDataUrl}" alt="头像" class="${escapeHtml(imgClass)}" />`;
       }
-      return `<span>${avatarIcon || '👨‍🚀'}</span>`;
+      return `<span>${escapeHtml(avatarIcon || '👨‍🚀')}</span>`;
     }
 
     function generateDeterministicUid(nameStr) {
@@ -5440,6 +5447,7 @@
       return list;
     }
 
+    const DEFAULT_FIREBASE_DB_URL = 'https://wu-wu-36e5b-default-rtdb.firebaseio.com';
     const CUSTOM_CLOUD_URL_KEY = 'STARFORGE_CUSTOM_CLOUD_API_URL_V1';
     let lastCloudSyncTime = 0;
     let isCloudSyncing = false;
@@ -5453,7 +5461,7 @@
           return custom.replace(/\/+$/, '').replace(/\.json$/, '');
         }
       } catch (e) {}
-      return '';
+      return DEFAULT_FIREBASE_DB_URL;
     }
 
     function updateCloudStatusUI(state, msg) {
@@ -5542,13 +5550,99 @@
       } catch (e) {}
     }
 
+    let lastThrottledPushTime = 0;
+    let firebaseSseSource = null;
+    let firebaseSseBoundUrl = '';
+
+    function buildCompactPlayerRecord(record) {
+      return {
+        ...record,
+        name: String(record.name || '指挥官'),
+        score: Number(record.score) || 0,
+        fleetPower: Number(record.fleetPower) || 0,
+        avatar: record.avatar || '👨‍🚀',
+        updatedAt: Date.now(),
+        lastPlayedAt: record.lastPlayedAt || Date.now(),
+        isDemoSeed: false,
+        customAvatarDataUrl: (record.customAvatarDataUrl && record.customAvatarDataUrl.length < 15000) ? record.customAvatarDataUrl : ''
+      };
+    }
+
+    async function pushMyRecordThrottled(record) {
+      const baseUrl = getFirebaseBaseUrl();
+      if (!baseUrl || !record || !record.uid || !GameState.commander?.onboardingCompleted) return;
+      const now = Date.now();
+      if (now - lastThrottledPushTime < 5000) return;
+      lastThrottledPushTime = now;
+      try {
+        await fetch(`${baseUrl}/players/${encodeURIComponent(record.uid)}.json`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(buildCompactPlayerRecord(record))
+        });
+      } catch (e) {}
+    }
+
+    function stopFirebaseRealtimeStream() {
+      if (firebaseSseSource) {
+        try { firebaseSseSource.close(); } catch (e) {}
+        firebaseSseSource = null;
+        firebaseSseBoundUrl = '';
+      }
+    }
+
+    function startFirebaseRealtimeStream() {
+      const baseUrl = getFirebaseBaseUrl();
+      if (!baseUrl) {
+        stopFirebaseRealtimeStream();
+        return;
+      }
+      if (firebaseSseSource && firebaseSseBoundUrl === baseUrl) return;
+      stopFirebaseRealtimeStream();
+      if (typeof EventSource === 'undefined') return;
+      try {
+        firebaseSseBoundUrl = baseUrl;
+        const streamUrl = `${baseUrl}/players.json`;
+        const es = new EventSource(streamUrl);
+        firebaseSseSource = es;
+        const handleSsePayload = (ev) => {
+          try {
+            const payload = JSON.parse(ev.data || '{}');
+            if (!payload || payload.data === null || payload.data === undefined) return;
+            const path = payload.path || '/';
+            let incoming = [];
+            if (path === '/' && typeof payload.data === 'object') {
+              incoming = Object.values(payload.data);
+            } else if (path.length > 1 && typeof payload.data === 'object') {
+              incoming = [payload.data];
+            }
+            if (incoming.length > 0) {
+              const merged = mergePlayerLists(loadGlobalPlayersRegistry(), incoming);
+              saveGlobalPlayersRegistry(merged);
+              renderPlayersView();
+              renderEmpireView();
+              updateCloudStatusUI('online', `☁️ Firebase 实时订阅中 · 全服 ${merged.length} 人 (${new Date().toLocaleTimeString()})`);
+            }
+          } catch (e) {}
+        };
+        es.addEventListener('put', handleSsePayload);
+        es.addEventListener('patch', handleSsePayload);
+        es.onerror = () => {
+          // Keep polling fallback active; close broken stream so reconnect can retry later
+          stopFirebaseRealtimeStream();
+        };
+      } catch (e) {}
+    }
+
     async function syncWithCloudLeaderboard(forcePush = false) {
       const baseUrl = getFirebaseBaseUrl();
       const localList = loadGlobalPlayersRegistry();
       if (!baseUrl) {
+        stopFirebaseRealtimeStream();
         updateCloudStatusUI('local', `📡 本地多标签 & 联机码模式（在榜 ${localList.length} 人 · 点击⚙️绑定 Firebase 即开跨设备真联机）`);
         return;
       }
+      startFirebaseRealtimeStream();
       if (isCloudSyncing) return;
       const now = Date.now();
       if (!forcePush && now - lastCloudSyncTime < 4500) return;
@@ -5558,8 +5652,11 @@
       updateCloudStatusUI('syncing', '☁️ 正在按 UID 同步云端数据库与异步 PVP 战报...');
 
       try {
-        // 1. GET /players.json (read full players map)
-        const getRes = await fetch(`${baseUrl}/players.json`, { method: 'GET' });
+        // 1. Query top 60 by score (uses .indexOn: ["score"]), fallback to full /players.json if index not yet configured
+        let getRes = await fetch(`${baseUrl}/players.json?orderBy=%22score%22&limitToLast=60`, { method: 'GET' });
+        if (!getRes.ok) {
+          getRes = await fetch(`${baseUrl}/players.json`, { method: 'GET' });
+        }
         if (!getRes.ok) throw new Error('HTTP ' + getRes.status);
         const rawData = await getRes.json();
         const remoteList = rawData
@@ -5570,15 +5667,11 @@
         const myUid = GameState.commander?.uid;
         const myRecord = localList.find(p => p.uid === myUid);
         if (myRecord && myUid && GameState.commander?.onboardingCompleted) {
-          const compactMine = {
-            ...myRecord,
-            isDemoSeed: false,
-            customAvatarDataUrl: (myRecord.customAvatarDataUrl && myRecord.customAvatarDataUrl.length < 15000) ? myRecord.customAvatarDataUrl : ''
-          };
+          lastThrottledPushTime = Date.now();
           await fetch(`${baseUrl}/players/${encodeURIComponent(myUid)}.json`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(compactMine)
+            body: JSON.stringify(buildCompactPlayerRecord(myRecord))
           });
         }
 
@@ -5666,6 +5759,7 @@
         registry.push(myRecord);
       }
       saveGlobalPlayersRegistry(registry);
+      pushMyRecordThrottled(myRecord);
     }
 
     function getAllPlayedCommandersSorted(sortBy = 'score', searchQuery = '') {
@@ -5985,13 +6079,13 @@
       if (!listEl) return;
 
       if (allSorted.length === 0) {
-        listEl.innerHTML = `<div class="text-xs text-slate-400 py-8 text-center">未检索到匹配「${GameState.playerSearchQuery}」的玩家 UID 或姓名。请确认输入完整的 UID (如 SF-xxxxxx) 或玩家姓名。</div>`;
+        listEl.innerHTML = `<div class="text-xs text-slate-400 py-8 text-center">未检索到匹配「${escapeHtml(GameState.playerSearchQuery)}」的玩家 UID 或姓名。请确认输入完整的 UID (如 SF-xxxxxx) 或玩家姓名。</div>`;
       } else {
         listEl.innerHTML = allSorted.map((p, idx) => {
           const isMe = p.uid === GameState.commander?.uid;
           const isSelected = p.id === GameState.selectedPlayerId || p.uid === GameState.selectedPlayerId;
           return `
-            <div data-select-player="${p.id}" class="p-2.5 rounded-lg border transition cursor-pointer flex items-center justify-between gap-2 ${
+            <div data-select-player="${escapeHtml(p.id)}" class="p-2.5 rounded-lg border transition cursor-pointer flex items-center justify-between gap-2 ${
               isSelected
                 ? 'bg-cyan-950/60 border-cyan-400 shadow-md'
                 : (isMe ? 'bg-slate-900/95 border-amber-400/60' : 'bg-slate-900/80 border-slate-800 hover:bg-slate-800/70')
@@ -6005,11 +6099,11 @@
                 </div>
                 <div class="truncate">
                   <div class="flex items-center gap-1.5">
-                    <span class="text-xs font-bold ${isMe ? 'text-amber-300' : 'text-white'} truncate">${p.name}</span>
-                    <span class="text-[10px] px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 mono">${p.uid || 'UID'}</span>
+                    <span class="text-xs font-bold ${isMe ? 'text-amber-300' : 'text-white'} truncate">${escapeHtml(p.name)}</span>
+                    <span class="text-[10px] px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 mono">${escapeHtml(p.uid || 'UID')}</span>
                     ${isMe ? '<span class="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 mono">我方</span>' : (p.isDemoSeed ? '<span class="text-[9px] px-1.5 py-0.2 rounded bg-slate-700 text-slate-300 mono">演示对手</span>' : '<span class="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 mono">真人玩家</span>')}
                   </div>
-                  <div class="text-[10px] text-slate-400 mono truncate">势力: ${p.factionName || '星际同盟'} · ${isMe || (GameState.playerSearchQuery || '').trim() ? `基地: ${p.baseName} ${p.coords}` : '🔒 坐标隐蔽 (需输入姓名或UID搜索定位)'}</div>
+                  <div class="text-[10px] text-slate-400 mono truncate">势力: ${escapeHtml(p.factionName || '星际同盟')} · ${isMe || (GameState.playerSearchQuery || '').trim() ? `基地: ${escapeHtml(p.baseName)} ${escapeHtml(p.coords)}` : '🔒 坐标隐蔽 (需输入姓名或UID搜索定位)'}</div>
                 </div>
               </div>
               <div class="text-right mono shrink-0">
@@ -7718,10 +7812,38 @@
           if (val) localStorage.setItem(CUSTOM_CLOUD_URL_KEY, val);
           else localStorage.removeItem(CUSTOM_CLOUD_URL_KEY);
         } catch (e) {}
+        stopFirebaseRealtimeStream();
         document.getElementById('customCloudConfigBox').classList.add('hidden');
         await syncWithCloudLeaderboard(true);
         renderPlayersView();
         showToast('已更新云端服务器地址并完成同步！', 'emerald');
+      });
+
+      document.getElementById('btnCopyFirebaseRules')?.addEventListener('click', async () => {
+        const rulesJson = JSON.stringify({
+          rules: {
+            players: {
+              ".read": true,
+              ".indexOn": ["score"],
+              "$uid": {
+                ".write": true,
+                ".validate": "newData.hasChildren(['name','score'])"
+              }
+            },
+            inbox: {
+              "$uid": {
+                ".read": true,
+                ".write": true
+              }
+            }
+          }
+        }, null, 2);
+        try {
+          await navigator.clipboard.writeText(rulesJson);
+          showToast('📋 已复制 Firebase 安全规则（含 players 索引与 inbox 异步战报）！', 'emerald');
+        } catch (e) {
+          showToast('复制失败，请手动允许剪贴板权限', 'amber');
+        }
       });
 
       if (starforgeBroadcast) {
