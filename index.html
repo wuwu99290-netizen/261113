@@ -293,11 +293,18 @@
 
         <!-- Active Fleet & Shipyard Summary -->
         <div class="border-t border-slate-800 pt-2.5">
-          <div class="flex items-center justify-between mb-1.5">
-            <span class="text-xs font-semibold text-cyan-300">🚀 帝国主力舰队编制</span>
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-semibold text-cyan-300">🚀 帝国舰队编组</span>
             <span id="fleetPowerBadge" class="text-xs mono text-amber-300 font-bold">战力 0</span>
           </div>
-          <div id="leftFleetList" class="space-y-1.5 max-h-44 overflow-y-auto pr-1 text-xs">
+          <div class="flex items-center gap-1 mb-1.5">
+            <select id="activeSquadronSelect" class="flex-1 min-w-0 bg-slate-900 border border-cyan-500/40 rounded px-1.5 py-1 text-[11px] text-cyan-200 font-medium">
+              <option value="all">全部现役舰船</option>
+            </select>
+            <button id="btnAddSquadron" class="cyber-btn px-1.5 py-1 rounded text-[11px]" title="新建自定义编队">＋</button>
+            <button id="btnRenameSquadron" class="cyber-btn px-1.5 py-1 rounded text-[11px]" title="重命名当前编队">✏️</button>
+          </div>
+          <div id="leftFleetList" class="space-y-1.5 max-h-48 overflow-y-auto pr-1 text-xs">
             <!-- Populated by JS -->
           </div>
           <div class="mt-2 grid grid-cols-2 gap-1.5">
@@ -467,9 +474,12 @@
         <div class="px-3 py-2 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 bg-slate-950/80 shrink-0">
           <div class="flex flex-wrap items-center gap-1.5">
             <span class="text-xs font-semibold text-amber-300 mr-1">舰体级别:</span>
-            <button data-hull="frigate" class="hull-select-btn cyber-btn px-2.5 py-1 rounded text-xs mono">护卫舰 (5x5)</button>
-            <button data-hull="cruiser" class="hull-select-btn cyber-btn px-2.5 py-1 rounded text-xs mono">巡洋舰 (7x7)</button>
-            <button data-hull="battleship" class="hull-select-btn cyber-btn px-2.5 py-1 rounded text-xs mono">战列舰 (9x9)</button>
+            <button data-hull="corvette" class="hull-select-btn cyber-btn px-2 py-1 rounded text-[11px] mono">突击艇 (5x5)</button>
+            <button data-hull="frigate" class="hull-select-btn cyber-btn px-2 py-1 rounded text-[11px] mono">护卫舰 (5x5)</button>
+            <button data-hull="destroyer" class="hull-select-btn cyber-btn px-2 py-1 rounded text-[11px] mono">驱逐舰 (6x6)</button>
+            <button data-hull="cruiser" class="hull-select-btn cyber-btn px-2 py-1 rounded text-[11px] mono">巡洋舰 (7x7)</button>
+            <button data-hull="carrier" class="hull-select-btn cyber-btn px-2 py-1 rounded text-[11px] mono">母舰 (8x8)</button>
+            <button data-hull="battleship" class="hull-select-btn cyber-btn px-2 py-1 rounded text-[11px] mono">战列舰 (9x9)</button>
           </div>
           <div class="flex flex-wrap items-center gap-1.5">
             <input id="blueprintNameInput" type="text" value="猎户座级磁轨巡洋舰" class="bg-slate-900 border border-cyan-500/40 rounded px-2 py-1 text-xs text-white w-40 focus:outline-none focus:border-cyan-400" placeholder="输入蓝图名称..." />
@@ -884,6 +894,20 @@
           </div>
           <!-- Crisis Damage Contribution Progress -->
           <div id="crisisContributionBox" class="mt-2.5 pt-2 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs mono">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Officer Recruitment & Staff Command -->
+        <div class="bg-slate-950/85 border border-purple-500/35 rounded-lg p-3 space-y-2">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-1.5">
+            <div>
+              <span class="text-xs font-bold text-purple-300">🎖️ 帝国参谋部与军官招募系统 (最多上阵 3 名军官)</span>
+              <span class="text-[11px] text-slate-400 ml-2">消耗💎晶体与🌌暗物质招募传奇军官，提供全局战斗与无人机加成</span>
+            </div>
+            <span id="activeOfficersBadge" class="text-[11px] mono text-amber-300">已上阵: 0 / 3</span>
+          </div>
+          <div id="officerRecruitmentGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-2">
             <!-- Populated by JS -->
           </div>
         </div>
@@ -1561,6 +1585,22 @@
     // 'C' = Core (核心区), 'W' = Weapon (武器槽), 'E' = Engine (引擎槽),
     // 'U' = Utility (通用槽), 'A' = Outer Armor Belt (外层装甲带), '.' = Void
     const HULL_SPECS = {
+      corvette: {
+        id: 'corvette',
+        name: '隐形突击艇',
+        size: 5,
+        baseHp: 390,
+        baseSpeed: 122,
+        baseEvasion: 46,
+        baseCost: { metal: 55, crystal: 25, deut: 10 },
+        layout: [
+          ['.', '.', 'W', '.', '.'],
+          ['.', 'A', 'W', 'A', '.'],
+          ['A', 'U', 'C', 'U', 'A'],
+          ['.', 'A', 'C', 'A', '.'],
+          ['.', 'E', 'E', 'E', '.']
+        ]
+      },
       frigate: {
         id: 'frigate',
         name: '轻型护卫舰',
@@ -1575,6 +1615,23 @@
           ['A', 'U', 'C', 'U', 'A'],
           ['A', 'U', 'C', 'U', 'A'],
           ['.', 'A', 'E', 'A', '.']
+        ]
+      },
+      destroyer: {
+        id: 'destroyer',
+        name: '重装驱逐舰',
+        size: 6,
+        baseHp: 860,
+        baseSpeed: 82,
+        baseEvasion: 26,
+        baseCost: { metal: 130, crystal: 70, deut: 35 },
+        layout: [
+          ['.', 'A', 'W', 'W', 'A', '.'],
+          ['A', 'W', 'U', 'U', 'W', 'A'],
+          ['A', 'U', 'C', 'C', 'U', 'A'],
+          ['A', 'W', 'C', 'C', 'W', 'A'],
+          ['.', 'A', 'U', 'U', 'A', '.'],
+          ['.', '.', 'E', 'E', '.', '.']
         ]
       },
       cruiser: {
@@ -1593,6 +1650,25 @@
           ['A', 'W', 'U', 'C', 'U', 'W', 'A'],
           ['.', 'A', 'U', 'E', 'U', 'A', '.'],
           ['.', '.', 'A', 'E', 'A', '.', '.']
+        ]
+      },
+      carrier: {
+        id: 'carrier',
+        name: '无人机母舰',
+        size: 8,
+        baseHp: 1950,
+        baseSpeed: 56,
+        baseEvasion: 14,
+        baseCost: { metal: 310, crystal: 185, deut: 95 },
+        layout: [
+          ['.', '.', 'A', 'W', 'W', 'A', '.', '.'],
+          ['.', 'A', 'U', 'U', 'U', 'U', 'A', '.'],
+          ['A', 'W', 'U', 'C', 'C', 'U', 'W', 'A'],
+          ['A', 'U', 'C', 'C', 'C', 'C', 'U', 'A'],
+          ['A', 'U', 'C', 'C', 'C', 'C', 'U', 'A'],
+          ['A', 'W', 'U', 'U', 'U', 'U', 'W', 'A'],
+          ['.', 'A', 'U', 'E', 'E', 'U', 'A', '.'],
+          ['.', '.', 'A', 'E', 'E', 'A', '.', '.']
         ]
       },
       battleship: {
@@ -1822,6 +1898,107 @@
         desc: '【高热能量】巨额热能伤害并融化重甲(90%穿甲)，但发热极高，需充足散热器支撑。'
       },
 
+      // Extended Tactical Modules (Drones, Antimatter, Torpedo, Cloak, Nano Repair, Warp Thruster)
+      {
+        id: 'drone_hangar',
+        name: '星穹无人机机库',
+        short: '无人机库',
+        icon: '🛸',
+        category: 'weapon',
+        allowedSlots: ['U', 'C', 'W'],
+        mass: 22,
+        power: -20,
+        cpu: -14,
+        heatGen: 6,
+        droneCount: 3,
+        cost: { metal: 55, crystal: 45 },
+        desc: '【无人机集群】实战中释放 3 架自律攻击无人机绕敌齐射，无视部分闪避。'
+      },
+      {
+        id: 'wpn_torpedo',
+        name: '量子破盾鱼雷管',
+        short: '破盾鱼雷',
+        icon: '💠',
+        category: 'weapon',
+        allowedSlots: ['W'],
+        weaponType: 'torpedo',
+        isKineticWeapon: true,
+        damage: 78,
+        fireRate: 0.72,
+        accuracy: 0.88,
+        armorPen: 0.35,
+        shieldMult: 2.2,
+        hullMult: 1.0,
+        mass: 26,
+        power: -18,
+        cpu: -14,
+        heatGen: 11,
+        cost: { metal: 48, crystal: 40 },
+        desc: '【破盾武器】对偏折护盾造成 220% 撕裂伤害，克制重盾母舰与战列舰。'
+      },
+      {
+        id: 'reactor_antimatter',
+        name: '反物质奇点反应堆',
+        short: '反物质堆',
+        icon: '🌌',
+        category: 'core',
+        allowedSlots: ['C'],
+        isReactor: true,
+        mass: 30,
+        power: 165,
+        cpu: -8,
+        heatGen: 14,
+        cost: { metal: 95, crystal: 85 },
+        desc: '核心区顶级能源，产出 +165 超高电力，可支撑重型战列舰与母舰全负荷运转。'
+      },
+      {
+        id: 'thruster_warp',
+        name: '矢量跃迁超空间引擎',
+        short: '跃迁引擎',
+        icon: '🌀',
+        category: 'core',
+        allowedSlots: ['E', 'U'],
+        mass: 16,
+        power: -22,
+        cpu: -10,
+        heatGen: 10,
+        thrust: 58,
+        evasionBonus: 11,
+        cost: { metal: 42, crystal: 32 },
+        desc: '提供 +58 推力与 +11% 机动闪避，大幅提升突击艇与驱逐舰战场机动性。'
+      },
+      {
+        id: 'cloak_phase',
+        name: '相位隐形力场发生器',
+        short: '隐形力场',
+        icon: '👻',
+        category: 'defense',
+        allowedSlots: ['U', 'A'],
+        mass: 14,
+        power: -24,
+        cpu: -14,
+        heatGen: 8,
+        evasionBonus: 18,
+        cost: { metal: 35, crystal: 55 },
+        desc: '光学与雷达相位隐形，直接提供 +18% 高额战场闪避率。'
+      },
+      {
+        id: 'nano_repair',
+        name: '纳米自修复装甲矩阵',
+        short: '纳米修复',
+        icon: '🧬',
+        category: 'defense',
+        allowedSlots: ['U', 'C'],
+        mass: 18,
+        power: -16,
+        cpu: -10,
+        heatGen: 5,
+        hpRegen: 18,
+        bonusHp: 110,
+        cost: { metal: 45, crystal: 40 },
+        desc: '战斗中每秒自动修复 +18 点船体结构值，并增加 +110 基础船体上限。'
+      },
+
       // Defense Modules
       {
         id: 'def_shield',
@@ -1958,7 +2135,33 @@
         costCompute: 130,
         costCrystal: 160,
         desc: '每级使外交声望与联盟支持度获取 +25%，联盟集结令协同战力加成 +15%。'
+      },
+      {
+        id: 'tech_drone',
+        branch: '武器与能量核心线',
+        name: '自律无人机蜂群协议',
+        maxLevel: 3,
+        costCompute: 110,
+        costCrystal: 130,
+        desc: '每级使全舰队无人机伤害 +28%，且每座无人机机库额外多出击 +1 架无人机。'
+      },
+      {
+        id: 'tech_officer',
+        branch: '星际殖民与外交线',
+        name: '帝国参谋部军官训练体系',
+        maxLevel: 3,
+        costCompute: 120,
+        costCrystal: 140,
+        desc: '每级使所有已任命参谋部军官的属性加成效果 +25%。'
       }
+    ];
+
+    const OFFICER_ROSTER = [
+      { id: 'off_gunner', name: '传奇炮术长 · 凯尔', icon: '🎯', role: '武器指挥官', costCrystal: 180, costDark: 30, buffType: 'dmg', buffVal: 0.16, desc: '全舰队武器伤害 +16%' },
+      { id: 'off_shield', name: '护盾工程大师 · 艾琳娜', icon: '🛡️', role: '首席防御官', costCrystal: 180, costDark: 30, buffType: 'shield', buffVal: 0.22, desc: '全舰队护盾上限与回充 +22%' },
+      { id: 'off_drone', name: '蜂群战术官 · 零号', icon: '🛸', role: '航母无人机指挥', costCrystal: 220, costDark: 45, buffType: 'drone', buffVal: 2, desc: '每艘舰船额外携带 +2 架攻击无人机' },
+      { id: 'off_raider', name: '深空掠夺王 · 巴尔干', icon: '🏴‍☠️', role: '远征掠夺官', costCrystal: 160, costDark: 25, buffType: 'loot', buffVal: 0.25, desc: 'PVP 与星系战斗资源掠夺收益 +25%' },
+      { id: 'off_scholar', name: '量子超算学者 · 林博士', icon: '🧠', role: '帝国首席科学家', costCrystal: 170, costDark: 35, buffType: 'compute', buffVal: 0.25, desc: '每回合算力与科研产出 +25%' }
     ];
 
     // 6 AI Star Lords Definitions
@@ -1973,7 +2176,7 @@
         relation: 25,
         inAlliance: true,
         votesForPlayer: false,
-        fleetPower: 1450,
+        fleetPower: 2450,
         economyScore: 1900,
         sanctioned: false,
         traitDesc: '极度看重晶体与金属利益。向其馈赠资源可轻易收买其联盟选票与代理人舰队。'
@@ -2003,7 +2206,7 @@
         relation: -35,
         inAlliance: false,
         votesForPlayer: false,
-        fleetPower: 1750,
+        fleetPower: 2950,
         economyScore: 1100,
         sanctioned: false,
         traitDesc: '只要给足暗物质或金属，随时愿意充当代理人战争打手袭击任何指定势力。'
@@ -2301,6 +2504,8 @@
         compute: 140,
         relicCores: 3
       },
+      recruitedOfficers: [],
+      activeOfficers: [],
       techLevels: {
         tech_hull_1: 0,
         tech_hull_2: 0,
@@ -2320,6 +2525,12 @@
         grid: {} // key: "r,c" -> module object copy
       },
       blueprints: [],
+      squadrons: [
+        { id: 'sq_1', name: '第1主力突击舰队' },
+        { id: 'sq_2', name: '第2深空掠夺舰队' },
+        { id: 'sq_3', name: '第3母星防卫舰队' }
+      ],
+      activeSquadronId: 'sq_1',
       fleet: [], // Array of built ship instances
       relicInventory: [], // Array of generated relic modules with affixes
       latestRelicPulls: [],
@@ -2642,6 +2853,8 @@
 
       let maxHp = Math.round(hull.baseHp * (1 + techHull1 * 0.12));
       let armor = 10;
+      let droneCount = hullId === 'carrier' ? 2 : 0;
+      let hpRegen = 0;
       let maxShield = 0;
       let shieldRegen = 0;
       let thrust = 0;
@@ -2698,6 +2911,8 @@
         heatSink += modHeatSink;
 
         maxHp += (mod.hpBonus || 0) + (mod.bonusHp || 0);
+        if (mod.droneCount) droneCount += mod.droneCount + (GameState.techLevels.tech_drone || 0);
+        if (mod.hpRegen) hpRegen += mod.hpRegen;
         armor += (mod.armorBonus || 0);
         thrust += (mod.thrust || 0);
         evasionBonus += (mod.evasionBonus || 0) + (mod.bonusEvasion || 0);
@@ -2810,7 +3025,7 @@
       const dps = Math.round(weapons.reduce((acc, w) => acc + w.damage * w.fireRate, 0));
       const powerValid = powerUsed <= powerProduced;
       const cpuValid = cpuUsed <= cpuProduced;
-      const hasWeapons = weapons.length > 0;
+      const hasWeapons = weapons.length > 0 || droneCount > 0;
       const canDeploy = powerValid && cpuValid && hasWeapons;
 
       // Overall Combat Power Score
@@ -2837,6 +3052,8 @@
         heatGen,
         heatSink,
         maxHp,
+        hpRegen,
+        droneCount,
         armor,
         maxShield,
         shieldRegen,
@@ -2996,25 +3213,90 @@
         crisisText.textContent = `距离赛季星系危机：${rem} 回合`;
       }
 
-      // Left Fleet list
-      const fleetPower = getPlayerTotalFleetPower();
-      document.getElementById('fleetPowerBadge').textContent = `战力 ${fleetPower}`;
+      // Ensure squadrons exist on older saves
+      if (!Array.isArray(GameState.squadrons) || GameState.squadrons.length === 0) {
+        GameState.squadrons = [
+          { id: 'sq_1', name: '第1主力突击舰队' },
+          { id: 'sq_2', name: '第2深空掠夺舰队' },
+          { id: 'sq_3', name: '第3母星防卫舰队' }
+        ];
+      }
+      if (!GameState.activeSquadronId) GameState.activeSquadronId = 'sq_1';
+      GameState.fleet.forEach(sh => {
+        if (!sh.squadronId) sh.squadronId = GameState.squadrons[0].id;
+      });
+
+      const sqSel = document.getElementById('activeSquadronSelect');
+      if (sqSel) {
+        const curSq = GameState.activeSquadronId;
+        sqSel.innerHTML = `<option value="all">全部现役 (${GameState.fleet.length}艘)</option>` +
+          GameState.squadrons.map(sq => {
+            const cnt = GameState.fleet.filter(sh => sh.squadronId === sq.id).length;
+            return `<option value="${escapeHtml(sq.id)}">${escapeHtml(sq.name)} (${cnt}艘)</option>`;
+          }).join('');
+        sqSel.value = (curSq === 'all' || GameState.squadrons.some(sq => sq.id === curSq)) ? curSq : 'all';
+      }
+
+      const visibleShips = GameState.activeSquadronId === 'all'
+        ? GameState.fleet.map((ship, idx) => ({ ship, idx }))
+        : GameState.fleet.map((ship, idx) => ({ ship, idx })).filter(x => x.ship.squadronId === GameState.activeSquadronId);
+
+      const totalFleetPower = getPlayerTotalFleetPower();
+      const visiblePower = visibleShips.reduce((acc, x) => acc + (x.ship.stats?.combatPower || 0), 0);
+      document.getElementById('fleetPowerBadge').textContent = GameState.activeSquadronId === 'all'
+        ? `总战力 ${totalFleetPower}`
+        : `本队 ${visiblePower} / 总 ${totalFleetPower}`;
+
       const fleetListEl = document.getElementById('leftFleetList');
       fleetListEl.innerHTML = '';
-      if (GameState.fleet.length === 0) {
-        fleetListEl.innerHTML = `<div class="text-slate-500 py-2 text-center">暂无现役舰船，请点击下方建造</div>`;
+      if (visibleShips.length === 0) {
+        fleetListEl.innerHTML = `<div class="text-slate-500 py-2 text-center">当前编队暂无舰船，可建造或从其他编队调入</div>`;
       } else {
-        GameState.fleet.forEach((ship, idx) => {
+        const groups = new Map();
+        visibleShips.forEach(({ ship, idx }) => {
+          const bpKey = `${ship.blueprintName || ship.name.replace(/#\d+$/, '')}__${ship.hullId}__${ship.squadronId}`;
+          if (!groups.has(bpKey)) {
+            groups.set(bpKey, {
+              bpKey,
+              title: ship.blueprintName || ship.name.replace(/#\d+$/, ''),
+              hullId: ship.hullId,
+              hullName: ship.stats.hullName,
+              dps: ship.stats.dps,
+              maxShield: ship.stats.maxShield,
+              squadronId: ship.squadronId,
+              totalPower: 0,
+              indices: []
+            });
+          }
+          const g = groups.get(bpKey);
+          g.totalPower += (ship.stats.combatPower || 0);
+          g.indices.push(idx);
+        });
+        groups.forEach((g) => {
           const item = document.createElement('div');
-          item.className = 'p-1.5 rounded bg-slate-900/90 border border-slate-800 flex items-center justify-between';
+          item.className = 'p-2 rounded-lg bg-slate-900/90 border border-slate-800 space-y-1';
+          const sqOptions = GameState.squadrons.map(sq =>
+            `<option value="${escapeHtml(sq.id)}" ${sq.id === g.squadronId ? 'selected' : ''}>${escapeHtml(sq.name)}</option>`
+          ).join('');
           item.innerHTML = `
-            <div class="truncate pr-1">
-              <div class="font-medium text-slate-200 truncate">${ship.name}</div>
-              <div class="text-[10px] text-slate-400 mono">${ship.stats.hullName} · DPS ${ship.stats.dps} · 盾${ship.stats.maxShield}</div>
+            <div class="flex items-center justify-between gap-1.5">
+              <div class="truncate min-w-0">
+                <div class="flex items-center gap-1.5">
+                  <span class="font-semibold text-slate-100 truncate">${escapeHtml(g.title)}</span>
+                  <span class="px-1.5 py-0.2 rounded bg-cyan-500/20 border border-cyan-400/40 text-cyan-200 text-[10px] font-bold mono shrink-0">×${g.indices.length}</span>
+                </div>
+                <div class="text-[10px] text-slate-400 mono truncate">${escapeHtml(g.hullName)} · DPS ${g.dps} · 盾${g.maxShield}</div>
+              </div>
+              <div class="flex items-center gap-1 shrink-0">
+                <span class="text-[11px] mono text-amber-300 font-bold" title="编队战力">${g.totalPower}</span>
+                <button data-dismiss-idx="${g.indices[g.indices.length - 1]}" class="w-5 h-5 rounded bg-slate-800 hover:bg-rose-900/80 text-slate-400 hover:text-rose-300 text-xs flex items-center justify-center" title="退役拆解 1 艘">−</button>
+              </div>
             </div>
-            <div class="flex items-center gap-1 shrink-0">
-              <span class="text-[11px] mono text-cyan-300 font-semibold">${ship.stats.combatPower}</span>
-              <button data-dismiss-idx="${idx}" class="text-slate-500 hover:text-rose-400 px-1" title="退役拆解舰船">✕</button>
+            <div class="flex items-center justify-between gap-1 text-[10px] text-slate-400">
+              <span>调派编队:</span>
+              <select data-move-ship-idx="${g.indices[g.indices.length - 1]}" class="bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-[10px] text-cyan-300 max-w-[140px]">
+                ${sqOptions}
+              </select>
             </div>
           `;
           fleetListEl.appendChild(item);
@@ -3515,7 +3797,7 @@
       };
       const slotLabelMap = { C: '核心', W: '武器', E: '引擎', U: '通用', A: '装甲', '.': '' };
 
-      const cellSizeClass = hull.size === 9 ? 'w-10 h-10 sm:w-11 sm:h-11' : (hull.size === 7 ? 'w-11 h-11 sm:w-12 sm:h-12' : 'w-12 h-12 sm:w-14 sm:h-14');
+      const cellSizeClass = hull.size >= 8 ? 'w-9 h-9 sm:w-10 sm:h-10' : (hull.size >= 6 ? 'w-10 h-10 sm:w-11 sm:h-11' : 'w-12 h-12 sm:w-14 sm:h-14');
 
       for (let r = 0; r < hull.size; r++) {
         for (let c = 0; c < hull.size; c++) {
@@ -3930,12 +4212,23 @@
       GameState.resources.metal -= stats.cost.metal;
       GameState.resources.crystal -= stats.cost.crystal;
 
+      if (!Array.isArray(GameState.squadrons) || GameState.squadrons.length === 0) {
+        GameState.squadrons = [
+          { id: 'sq_1', name: '第1主力突击舰队' },
+          { id: 'sq_2', name: '第2深空掠夺舰队' },
+          { id: 'sq_3', name: '第3母星防卫舰队' }
+        ];
+      }
+      const targetSqId = (GameState.activeSquadronId && GameState.activeSquadronId !== 'all')
+        ? GameState.activeSquadronId
+        : GameState.squadrons[0].id;
       const shipNum = GameState.fleet.length + 1;
       GameState.fleet.push({
         uid: 'ship_' + Date.now() + '_' + shipNum,
         name: `${bp.name}#${shipNum}`,
         blueprintName: bp.name,
         hullId: bp.hullId,
+        squadronId: targetSqId,
         stats
       });
 
@@ -4103,6 +4396,20 @@
       CombatSim.isPlayerLootRaid = !!config.isPlayerLootRaid;
       CombatSim.isCrisisBattle = !!config.isCrisisBattle;
       CombatSim.projectiles = [];
+      CombatSim.allies.forEach(ally => {
+        const dCnt = ally.droneCount || 0;
+        for (let d = 0; d < dCnt; d++) {
+          CombatSim.drones.push({
+            side: 'ally',
+            ownerId: ally.id,
+            x: ally.x + (Math.random() - 0.5) * 30,
+            y: ally.y + (Math.random() - 0.5) * 30,
+            angle: (d / Math.max(1, dCnt)) * Math.PI * 2,
+            cd: Math.random() * 0.6,
+            dmg: Math.round(14 * (1 + (GameState.techLevels.tech_drone || 0) * 0.28) * (ally.offDmgMult || 1))
+          });
+        }
+      });
       CombatSim.beams = [];
       CombatSim.explosions = [];
       CombatSim.selectedAllyIndex = 0;
@@ -4119,7 +4426,15 @@
       const isNebula = CombatSim.environment === 'nebula';
 
       // Build Ally Ship Combat Actors
-      CombatSim.allies = GameState.fleet.map((f, idx) => {
+      const activeDeployShips = (GameState.activeSquadronId && GameState.activeSquadronId !== 'all')
+        ? GameState.fleet.filter(f => f.squadronId === GameState.activeSquadronId)
+        : GameState.fleet;
+      const deployFleet = activeDeployShips.length > 0 ? activeDeployShips : GameState.fleet;
+      const offDmgMult = 1 + getActiveOfficerBonus('dmg');
+      const offShieldMult = 1 + getActiveOfficerBonus('shield');
+      const offExtraDrones = Math.round(getActiveOfficerBonus('drone'));
+      CombatSim.drones = [];
+      CombatSim.allies = deployFleet.map((f, idx) => {
         const s = f.stats;
         return {
           id: `ally_${idx}`,
@@ -4130,8 +4445,11 @@
           y: 70 + idx * 65,
           hp: s.maxHp,
           maxHp: s.maxHp,
-          shield: isPulsar ? 0 : s.maxShield,
-          maxShield: isPulsar ? 0 : s.maxShield,
+          hpRegen: s.hpRegen || 0,
+          droneCount: (s.droneCount || 0) + (f.hullId === 'carrier' ? 2 : 0) + offExtraDrones,
+          offDmgMult,
+          shield: isPulsar ? 0 : Math.round(s.maxShield * offShieldMult),
+          maxShield: isPulsar ? 0 : Math.round(s.maxShield * offShieldMult),
           shieldRegen: isPulsar ? 0 : s.shieldRegen,
           armor: s.armor,
           speed: isNebula ? Math.round(s.speed * 0.5) : s.speed,
@@ -4333,6 +4651,40 @@
 
       aliveAllies.forEach(s => processShip(s, aliveEnemies, CombatSim.stats.ally, CombatSim.stats.enemy));
       aliveEnemies.forEach(s => processShip(s, aliveAllies, CombatSim.stats.enemy, CombatSim.stats.ally));
+
+      // Nano Self-Repair & Autonomous Drone Swarms
+      CombatSim.allies.forEach(s => {
+        if (s.hp > 0 && s.hpRegen > 0) {
+          s.hp = Math.min(s.maxHp, s.hp + s.hpRegen * dt);
+        }
+      });
+      if (Array.isArray(CombatSim.drones)) {
+        CombatSim.drones.forEach(dr => {
+          const owner = CombatSim.allies.find(a => a.id === dr.ownerId && a.hp > 0);
+          if (!owner || aliveEnemies.length === 0) return;
+          const target = aliveEnemies[0];
+          dr.angle += 0.14;
+          const tx = target.x + Math.cos(dr.angle) * 42;
+          const ty = target.y + Math.sin(dr.angle) * 34;
+          dr.x += (tx - dr.x) * 0.12;
+          dr.y += (ty - dr.y) * 0.12;
+          dr.cd -= dt;
+          if (dr.cd <= 0) {
+            dr.cd = 0.75;
+            if (target.shield > 0) {
+              const abs = Math.min(target.shield, dr.dmg);
+              target.shield -= abs;
+              target.hp = Math.max(0, target.hp - (dr.dmg - abs));
+            } else {
+              target.hp = Math.max(0, target.hp - dr.dmg);
+            }
+            CombatSim.stats.ally.laser += dr.dmg;
+            CombatSim.beams.push({
+              x1: dr.x, y1: dr.y, x2: target.x, y2: target.y, color: '#38bdf8', life: 4
+            });
+          }
+        });
+      }
 
       // Update Projectiles
       const remainingProjectiles = [];
@@ -4624,6 +4976,28 @@
         ctx.lineTo(b.x2 * scaleX, b.y2 * scaleY);
         ctx.stroke();
       });
+
+      // Draw Autonomous Combat Drones
+      if (Array.isArray(CombatSim.drones)) {
+        CombatSim.drones.forEach(dr => {
+          const owner = CombatSim.allies.find(a => a.id === dr.ownerId && a.hp > 0);
+          if (!owner) return;
+          const dx = dr.x * scaleX;
+          const dy = dr.y * scaleY;
+          ctx.save();
+          ctx.translate(dx, dy);
+          ctx.rotate(dr.angle + Math.PI / 2);
+          ctx.fillStyle = '#38bdf8';
+          ctx.beginPath();
+          ctx.moveTo(5, 0);
+          ctx.lineTo(-4, -3.5);
+          ctx.lineTo(-2, 0);
+          ctx.lineTo(-4, 3.5);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        });
+      }
 
       // Draw Projectiles
       CombatSim.projectiles.forEach(p => {
@@ -5281,8 +5655,50 @@
 
     let currentRankTab = 'power';
 
+    function getActiveOfficerBonus(buffType) {
+      const mult = 1 + (GameState.techLevels.tech_officer || 0) * 0.25;
+      let total = 0;
+      (GameState.activeOfficers || []).forEach(id => {
+        const off = OFFICER_ROSTER.find(o => o.id === id);
+        if (off && off.buffType === buffType) total += off.buffVal * mult;
+      });
+      return total;
+    }
+
+    function renderOfficerRecruitment() {
+      if (!Array.isArray(GameState.recruitedOfficers)) GameState.recruitedOfficers = [];
+      if (!Array.isArray(GameState.activeOfficers)) GameState.activeOfficers = [];
+      const badge = document.getElementById('activeOfficersBadge');
+      if (badge) badge.textContent = `已上阵: ${GameState.activeOfficers.length} / 3`;
+      const grid = document.getElementById('officerRecruitmentGrid');
+      if (!grid) return;
+      grid.innerHTML = OFFICER_ROSTER.map(off => {
+        const owned = GameState.recruitedOfficers.includes(off.id);
+        const active = GameState.activeOfficers.includes(off.id);
+        return `
+          <div class="p-2.5 rounded-lg border ${active ? 'bg-purple-950/45 border-purple-400' : 'bg-slate-900/90 border-slate-800'} flex flex-col justify-between gap-2">
+            <div>
+              <div class="flex items-center gap-1.5">
+                <span class="text-lg">${off.icon}</span>
+                <div class="min-w-0">
+                  <div class="text-xs font-bold text-white truncate">${escapeHtml(off.name)}</div>
+                  <div class="text-[10px] text-purple-300">${escapeHtml(off.role)}</div>
+                </div>
+              </div>
+              <p class="text-[11px] text-emerald-300 mt-1.5">${escapeHtml(off.desc)}</p>
+            </div>
+            ${owned
+              ? `<button data-toggle-officer="${off.id}" class="${active ? 'cyber-btn-amber' : 'cyber-btn'} w-full py-1 rounded text-[11px] font-bold">${active ? '✅ 已上阵 (点击卸下)' : '⚔️ 任命上阵'}</button>`
+              : `<button data-recruit-officer="${off.id}" class="cyber-btn-amber w-full py-1 rounded text-[11px] font-bold">招募 (💎${off.costCrystal} 🌌${off.costDark})</button>`
+            }
+          </div>
+        `;
+      }).join('');
+    }
+
     function renderEmpireView() {
       document.getElementById('techViewCompute').textContent = GameState.resources.compute;
+      renderOfficerRecruitment();
 
       // Crisis status
       const cStatus = document.getElementById('crisisStatusValue');
@@ -6488,9 +6904,9 @@
 
       // AI Lords dynamic growth
       GameState.aiLords.forEach(l => {
-        if (!l.sanctioned) {
-          l.fleetPower += Math.round(25 + Math.random() * 35);
-          l.economyScore += Math.round(20 + Math.random() * 30);
+        if (!l.sanctioned && !l.isVassal) {
+          l.fleetPower += Math.round(65 + Math.random() * 85);
+          l.economyScore += Math.round(45 + Math.random() * 55);
         } else {
           l.fleetPower = Math.max(600, l.fleetPower - 15);
         }
@@ -6699,6 +7115,65 @@
         SoundFX.play('install');
         showToast('全舰队护盾与反应装甲已完成轨道整备！', 'emerald');
       });
+      document.getElementById('activeSquadronSelect')?.addEventListener('change', (e) => {
+        GameState.activeSquadronId = e.target.value;
+        saveToStorage();
+        renderTopBarAndSidebar();
+        SoundFX.play('click');
+      });
+
+      document.getElementById('btnAddSquadron')?.addEventListener('click', () => {
+        const nextNum = (GameState.squadrons?.length || 0) + 1;
+        const newId = 'sq_' + Date.now();
+        GameState.squadrons.push({ id: newId, name: `第${nextNum}特遣舰队` });
+        GameState.activeSquadronId = newId;
+        saveToStorage();
+        renderTopBarAndSidebar();
+        SoundFX.play('install');
+        showToast(`已新建编队「第${nextNum}特遣舰队」，可从其他编队调派舰船或直接建造！`, 'emerald');
+      });
+
+      document.getElementById('btnRenameSquadron')?.addEventListener('click', () => {
+        if (!GameState.activeSquadronId || GameState.activeSquadronId === 'all') {
+          showToast('请先在下拉框选中一个具体编队再重命名！', 'amber');
+          return;
+        }
+        const sq = GameState.squadrons.find(x => x.id === GameState.activeSquadronId);
+        if (!sq) return;
+        const existingInput = document.getElementById('inlineRenameSquadronBox');
+        if (existingInput) { existingInput.remove(); return; }
+        const bar = document.getElementById('activeSquadronSelect').parentElement;
+        const box = document.createElement('div');
+        box.id = 'inlineRenameSquadronBox';
+        box.className = 'flex items-center gap-1 mb-1.5';
+        box.innerHTML = `<input id="renameSqInput" type="text" maxlength="16" value="${escapeHtml(sq.name)}" class="flex-1 bg-slate-950 border border-cyan-400 rounded px-2 py-0.5 text-[11px] text-white" /><button id="btnConfirmRenameSq" class="cyber-btn-amber px-2 py-0.5 rounded text-[11px] font-bold">确定</button>`;
+        bar.insertAdjacentElement('afterend', box);
+        document.getElementById('btnConfirmRenameSq').addEventListener('click', () => {
+          const val = (document.getElementById('renameSqInput').value || '').trim();
+          if (val) {
+            sq.name = val;
+            saveToStorage();
+            renderTopBarAndSidebar();
+            showToast(`编队已重命名为【${val}】`, 'emerald');
+          }
+          box.remove();
+        });
+      });
+
+      document.getElementById('leftFleetList').addEventListener('change', (e) => {
+        const sel = e.target.closest('[data-move-ship-idx]');
+        if (!sel) return;
+        const idx = Number(sel.dataset.moveShipIdx);
+        const ship = GameState.fleet[idx];
+        if (ship) {
+          ship.squadronId = sel.value;
+          saveToStorage();
+          renderTopBarAndSidebar();
+          SoundFX.play('click');
+          showToast(`已将 1 艘【${ship.blueprintName || ship.name}】调入新编队`, 'cyan');
+        }
+      });
+
       document.getElementById('leftFleetList').addEventListener('click', (e) => {
         const btn = e.target.closest('[data-dismiss-idx]');
         if (!btn) return;
@@ -7365,6 +7840,51 @@
           isCrisisBattle: true,
           enemyShips: preset.ships
         });
+      });
+
+      document.getElementById('officerRecruitmentGrid')?.addEventListener('click', (e) => {
+        const recBtn = e.target.closest('[data-recruit-officer]');
+        if (recBtn) {
+          const id = recBtn.dataset.recruitOfficer;
+          const off = OFFICER_ROSTER.find(o => o.id === id);
+          if (!off) return;
+          if (GameState.resources.crystal < off.costCrystal || GameState.resources.darkMatter < off.costDark) {
+            SoundFX.play('error');
+            showToast(`资源不足！需要 💎${off.costCrystal} 晶体、🌌${off.costDark} 暗物质`, 'red');
+            return;
+          }
+          GameState.resources.crystal -= off.costCrystal;
+          GameState.resources.darkMatter -= off.costDark;
+          if (!Array.isArray(GameState.recruitedOfficers)) GameState.recruitedOfficers = [];
+          if (!Array.isArray(GameState.activeOfficers)) GameState.activeOfficers = [];
+          GameState.recruitedOfficers.push(id);
+          if (GameState.activeOfficers.length < 3) GameState.activeOfficers.push(id);
+          SoundFX.play('relic');
+          saveToStorage();
+          renderTopBarAndSidebar();
+          renderEmpireView();
+          showToast(`🎖️ 成功招募【${off.name}】！`, 'emerald');
+          return;
+        }
+        const togBtn = e.target.closest('[data-toggle-officer]');
+        if (togBtn) {
+          const id = togBtn.dataset.toggleOfficer;
+          if (!Array.isArray(GameState.activeOfficers)) GameState.activeOfficers = [];
+          const idx = GameState.activeOfficers.indexOf(id);
+          if (idx >= 0) {
+            GameState.activeOfficers.splice(idx, 1);
+            SoundFX.play('click');
+          } else {
+            if (GameState.activeOfficers.length >= 3) {
+              showToast('参谋部最多只能同时上阵 3 名军官，请先卸下一名！', 'amber');
+              return;
+            }
+            GameState.activeOfficers.push(id);
+            SoundFX.play('install');
+          }
+          saveToStorage();
+          renderEmpireView();
+        }
       });
 
       document.getElementById('techTreeContainer').addEventListener('click', (e) => {
